@@ -1,0 +1,40 @@
+name: Release
+
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify tag matches VERSION
+        run: |
+          want="v$(cat VERSION)"
+          if [ "${GITHUB_REF_NAME}" != "$want" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match VERSION ($want). Keep them in sync." >&2
+            exit 1
+          fi
+
+      - name: Tag the Go submodule
+        run: |
+          go_tag="gen/go/${GITHUB_REF_NAME}"
+          if git rev-parse -q --verify "refs/tags/$go_tag" >/dev/null; then
+            echo "$go_tag already exists, nothing to do."
+            exit 0
+          fi
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git tag "$go_tag" "${GITHUB_REF_NAME}^{commit}"
+          git push origin "$go_tag"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" --generate-notes
