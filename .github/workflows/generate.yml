@@ -79,6 +79,16 @@ jobs:
       - name: Generate
         run: make generate
 
+      - name: Fix Python package import and sync version
+        run: |
+          # The grpc Python plugin emits a bare `import workers_pb2`; rewrite it
+          # to a package-relative import so `reggie_proto` installs cleanly.
+          sed -i 's/^import workers_pb2 as/from reggie_proto import workers_pb2 as/' \
+            gen/python/reggie_proto/workers_pb2_grpc.py
+          # Keep the packaged version in lockstep with the VERSION file.
+          sed -i "s/^version = \".*\"/version = \"$(cat VERSION)\"/" \
+            gen/python/pyproject.toml
+
       - name: Commit generated code and tag
         run: |
           cd gen/go
