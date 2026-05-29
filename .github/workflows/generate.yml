@@ -1,15 +1,22 @@
 name: Generate & Release
 
 on:
-  push:
+  pull_request:
     paths: ["*.proto", "VERSION", "buf.yaml", "buf.gen.yaml"]
+  push:
+    branches: ["master"]
+    paths: ["VERSION"]
 
 jobs:
-  check:
+  generate:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.head_ref }}
           fetch-depth: 0
 
       - uses: actions/setup-go@v5
@@ -39,44 +46,12 @@ jobs:
             echo "No previous release tag found, skipping breaking change check."
           fi
 
-  release:
-    needs: check
-    if: github.ref == 'refs/heads/master'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version: "1.26"
-
-      - name: Read version
-        id: version
+      - name: Fail if this VERSION was already released
         run: |
-          VERSION="v$(cat VERSION)"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "go_version=gen/go/$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Fail if version tag already exists
-        run: |
-          if git rev-parse "${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
-            echo "Tag ${{ steps.version.outputs.version }} already exists. Bump the VERSION file before merging." >&2
+          if git rev-parse -q --verify "refs/tags/v$(cat VERSION)" >/dev/null; then
+            echo "Tag v$(cat VERSION) already exists. Bump the VERSION file in this PR." >&2
             exit 1
           fi
-
-      - name: Install buf
-        run: |
-          curl -sSL https://github.com/bufbuild/buf/releases/latest/download/buf-Linux-x86_64 -o /usr/local/bin/buf
-          chmod +x /usr/local/bin/buf
-
-      - name: Install protoc plugins
-        run: |
-          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 
       - name: Generate
         run: make generate
@@ -91,7 +66,7 @@ jobs:
           sed -i "s/^version = \".*\"/version = \"$(cat VERSION)\"/" \
             gen/python/pyproject.toml
 
-      - name: Commit generated code and tag
+      - name: Commit regenerated code to the PR branch
         run: |
           cd gen/go
           go mod tidy
@@ -99,8 +74,40 @@ jobs:
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add gen/
-          git diff --staged --quiet || git commit -m "regenerate proto [${{ steps.version.outputs.version }}]"
+          if git diff --staged --quiet; then
+            echo "No regeneration changes to commit."
+          else
+            git commit -m "regenerate proto"
+            # Pushing with GITHUB_TOKEN to the PR's own branch is allowed and
+            # does not re-trigger workflows (so no loop).
+            git push origin "HEAD:${{ github.head_ref }}"
+          fi
+
+  tag:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version
+        id: version
+        run: |
+          VERSION="v$(cat VERSION)"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "go_version=gen/go/$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Tag the release
+        run: |
+          if git rev-parse -q --verify "refs/tags/${{ steps.version.outputs.version }}" >/dev/null; then
+            echo "Tag ${{ steps.version.outputs.version }} already exists, nothing to do."
+            exit 0
+          fi
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
           git tag "${{ steps.version.outputs.version }}"
           git tag "${{ steps.version.outputs.go_version }}"
-          git push
           git push origin "${{ steps.version.outputs.version }}" "${{ steps.version.outputs.go_version }}"
