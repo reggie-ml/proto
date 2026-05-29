@@ -1,0 +1,23 @@
+# Distribution for the generated Python gRPC/protobuf stubs.
+#
+# This file is committed; the `version` below is kept in sync with the top-level
+# `VERSION` file by the release workflow (.github/workflows/generate.yml) before
+# tagging. Consume it the way the Go module is consumed — pin to a git tag:
+#
+#   pip install "reggie-proto @ git+https://github.com/reggie-ml/proto@v0.1.0#subdirectory=gen/python"
+[project]
+name = "reggie-proto"
+version = "0.1.0"
+description = "Generated Python gRPC/protobuf stubs for the Reggie ML workers."
+requires-python = ">=3.12"
+dependencies = [
+    "protobuf>=6.31.0",
+    "grpcio>=1.78.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["reggie_proto"]

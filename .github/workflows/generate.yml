@@ -2,11 +2,46 @@ name: Generate & Release
 
 on:
   push:
-    branches: [main]
     paths: ["*.proto", "VERSION", "buf.yaml", "buf.gen.yaml"]
 
 jobs:
-  generate:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Install buf
+        run: |
+          curl -sSL https://github.com/bufbuild/buf/releases/latest/download/buf-Linux-x86_64 -o /usr/local/bin/buf
+          chmod +x /usr/local/bin/buf
+
+      - name: Install protoc plugins
+        run: |
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+      - name: Lint
+        run: buf lint
+
+      - name: Check for breaking changes
+        run: |
+          PREV_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+          if [ -n "$PREV_TAG" ]; then
+            echo "Checking breaking changes against $PREV_TAG"
+            buf breaking --against ".git#tag=$PREV_TAG"
+          else
+            echo "No previous release tag found, skipping breaking change check."
+          fi
+
+  release:
+    needs: check
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -41,21 +76,18 @@ jobs:
           go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
           go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 
-      - name: Lint
-        run: buf lint
-
-      - name: Check for breaking changes
-        run: |
-          PREV_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
-          if [ -n "$PREV_TAG" ]; then
-            echo "Checking breaking changes against $PREV_TAG"
-            buf breaking --against ".git#tag=$PREV_TAG"
-          else
-            echo "No previous release tag found, skipping breaking change check."
-          fi
-
       - name: Generate
         run: make generate
+
+      - name: Fix Python package import and sync version
+        run: |
+          # The grpc Python plugin emits a bare `import workers_pb2`; rewrite it
+          # to a package-relative import so `reggie_proto` installs cleanly.
+          sed -i 's/^import workers_pb2 as/from reggie_proto import workers_pb2 as/' \
+            gen/python/reggie_proto/workers_pb2_grpc.py
+          # Keep the packaged version in lockstep with the VERSION file.
+          sed -i "s/^version = \".*\"/version = \"$(cat VERSION)\"/" \
+            gen/python/pyproject.toml
 
       - name: Commit generated code and tag
         run: |

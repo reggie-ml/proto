@@ -1,7 +1,18 @@
 version: v2
 lint:
   use:
-    - DEFAULT
+    - STANDARD
+  except:
+    # Flat layout is intentional: single proto file at repo root with a
+    # fixed Go module output path. Moving to workers/v1/ would break the
+    # gen/go module structure.
+    - PACKAGE_DIRECTORY_MATCH
+    - PACKAGE_VERSION_SUFFIX
+    # RunJob is a bidirectional stream; WorkerUpdate and JobCommand are
+    # semantically correct names. The Request/Response convention is for
+    # unary RPCs.
+    - RPC_REQUEST_STANDARD_NAME
+    - RPC_RESPONSE_STANDARD_NAME
 breaking:
   use:
     - FILE
