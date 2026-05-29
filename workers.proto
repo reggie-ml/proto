@@ -1,0 +1,118 @@
+syntax = "proto3";
+package workers;
+
+option go_package = "github.com/reggie-ml/proto/gen/go";
+
+// WorkerService defines the communication contract between the Go API
+// (server) and Python ML worker processes (clients).
+//
+// Architecture:
+//   Go API spawns Python workers as child processes. Each worker connects
+//   back to the Go gRPC server to report progress and deliver results.
+//
+// Training flow:
+//   1. Go spawns a Python worker with job config passed via CLI args.
+//   2. Worker opens a RunJob bidirectional stream.
+//   3. Worker sends JobStarted, then streams TrainingProgress updates.
+//   4. Go can send CancelJob at any point to abort training.
+//   5. Worker sends JobCompleted (with pickled model) or JobFailed.
+//   6. Worker closes the stream and exits.
+//
+// Prediction flow:
+//   1. Go loads model artifact from the app database.
+//   2. Go spawns (or reuses) a Python worker and calls Predict.
+//   3. Worker deserializes the model, runs inference, returns predictions.
+service WorkerService {
+  // RunJob establishes a bidirectional stream for a single training job.
+  // The worker (client) streams WorkerUpdate messages to report lifecycle
+  // events and progress. The server streams JobCommand messages to control
+  // the worker (e.g. cancellation). The stream remains open for the
+  // duration of the training job.
+  rpc RunJob(stream WorkerUpdate) returns (stream JobCommand);
+
+  // Predict runs inference using a previously trained model.
+  // The model artifact (pickled bytes) and input features are provided
+  // in the request. Returns predictions in the same order as input rows.
+  rpc Predict(PredictRequest) returns (PredictResponse);
+}
+
+// WorkerUpdate is sent by the Python worker to the Go API over the
+// RunJob stream. Each message is tagged with the job_id and carries
+// exactly one lifecycle event as the payload.
+message WorkerUpdate {
+  string job_id = 1;
+  oneof payload {
+    JobStarted       started   = 2;
+    TrainingProgress progress  = 3;
+    JobCompleted     completed = 4;
+    JobFailed        failed    = 5;
+  }
+}
+
+// JobCommand is sent by the Go API to the Python worker over the
+// RunJob stream. Used to control the worker during training.
+message JobCommand {
+  oneof command {
+    CancelJob cancel = 1;
+  }
+}
+
+// CancelJob instructs the worker to abort the current training job
+// gracefully. The worker should clean up resources and send a JobFailed
+// message before closing the stream.
+message CancelJob {
+  string reason = 1;
+}
+
+// JobStarted is the first message a worker sends after opening the
+// RunJob stream, confirming it has initialized and is ready to train.
+message JobStarted {
+  // Unique identifier for this worker process, useful for logging
+  // and correlating with OS-level process management.
+  string worker_id = 1;
+}
+
+// TrainingProgress is streamed periodically during model training.
+// For iterative models (e.g. XGBoost), this is sent after each
+// boosting round. For single-step models (e.g. linear regression),
+// a single progress message is sent.
+message TrainingProgress {
+  int32              epoch        = 1; // Current training epoch/round (1-indexed)
+  int32              total_epochs = 2; // Total expected epochs (0 if unknown)
+  float              loss         = 3; // Current loss value
+  map<string, float> metrics      = 4; // Additional metrics (e.g. "rmse", "r2")
+}
+
+// JobCompleted signals successful training. Contains the serialized
+// model and final evaluation metrics. Sent as the last WorkerUpdate
+// before the worker closes the stream.
+message JobCompleted {
+  bytes              model_artifact       = 1; // Python pickle-serialized model bytes
+  map<string, float> metrics              = 2; // Final evaluation metrics on test set
+  int64              training_duration_ms = 3; // Wall-clock training time in milliseconds
+}
+
+// JobFailed signals that training could not be completed. This may be
+// due to data errors, DB connectivity issues, invalid configuration,
+// cancellation, or unexpected exceptions.
+message JobFailed {
+  string error_message = 1; // Human-readable error description
+  string traceback     = 2; // Python traceback for debugging
+}
+
+// PredictRequest asks the worker to run inference on one or more
+// input rows using a previously trained model.
+message PredictRequest {
+  // Identifier of the trained model in the app database.
+  string model_id = 1;
+  // Each entry is a JSON object mapping feature names to values.
+  // JSON is used here for flexibility during the PoC phase.
+  // Example: ["{\"age\": 30, \"income\": 50000}"]
+  repeated string feature_rows_json = 2;
+}
+
+// PredictResponse returns model predictions, one per input row,
+// in the same order as the input feature_rows_json.
+message PredictResponse {
+  repeated float predictions = 1;
+}
