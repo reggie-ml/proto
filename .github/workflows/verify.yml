@@ -1,0 +1,61 @@
+name: Verify
+
+on:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install buf
+        run: |
+          curl -sSL https://github.com/bufbuild/buf/releases/latest/download/buf-Linux-x86_64 -o /usr/local/bin/buf
+          chmod +x /usr/local/bin/buf
+
+      - name: Install protoc plugins
+        run: |
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+      - name: Lint
+        run: buf lint
+
+      - name: Check for breaking changes
+        run: |
+          PREV_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+          if [ -n "$PREV_TAG" ]; then
+            echo "Checking breaking changes against $PREV_TAG"
+            buf breaking --against ".git#tag=$PREV_TAG"
+          else
+            echo "No previous release tag found, skipping breaking change check."
+          fi
+
+      - name: Regenerate
+        run: make generate
+
+      - name: Ensure committed generated code is up to date
+        run: |
+          if ! git diff --exit-code; then
+            echo "::error::Generated code is stale. Run 'make generate' and commit the result." >&2
+            exit 1
+          fi
+
+      - name: Go module builds
+        run: cd gen/go && go build ./...
+
+      - name: Python package installs and imports
+        run: |
+          pip install ./gen/python
+          python -c "from reggie_proto import workers_pb2, workers_pb2_grpc"
