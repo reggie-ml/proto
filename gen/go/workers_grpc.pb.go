@@ -19,34 +19,15 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	WorkerService_RunJob_FullMethodName  = "/workers.WorkerService/RunJob"
-	WorkerService_Predict_FullMethodName = "/workers.WorkerService/Predict"
+	WorkerService_RunJob_FullMethodName = "/workers.WorkerService/RunJob"
 )
 
 // WorkerServiceClient is the client API for WorkerService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// WorkerService defines the communication contract between the Go API
-// (server) and Python ML worker processes (clients).
-//
-// Architecture:
-//
-//	Go API spawns Python workers as child processes. Each worker connects
-//	back to the Go gRPC server to report progress and deliver results.
-//
-// Training flow:
-//  1. Go spawns a Python worker with job config passed via CLI args.
-//  2. Worker opens a RunJob bidirectional stream.
-//  3. Worker sends JobStarted, then streams TrainingProgress updates.
-//  4. Go can send CancelJob at any point to abort training.
-//  5. Worker sends JobCompleted (with pickled model) or JobFailed.
-//  6. Worker closes the stream and exits.
-//
-// Prediction flow:
-//  1. Go loads model artifact from the app database.
-//  2. Go spawns (or reuses) a Python worker and calls Predict.
-//  3. Worker deserializes the model, runs inference, returns predictions.
+// WorkerService defines the communication contract between the API
+// (server) and worker processes (clients).
 type WorkerServiceClient interface {
 	// RunJob establishes a bidirectional stream for a single training job.
 	// The worker (client) streams WorkerUpdate messages to report lifecycle
@@ -54,10 +35,6 @@ type WorkerServiceClient interface {
 	// the worker (e.g. cancellation). The stream remains open for the
 	// duration of the training job.
 	RunJob(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[WorkerUpdate, JobCommand], error)
-	// Predict runs inference using a previously trained model.
-	// The model artifact (pickled bytes) and input features are provided
-	// in the request. Returns predictions in the same order as input rows.
-	Predict(ctx context.Context, in *PredictRequest, opts ...grpc.CallOption) (*PredictResponse, error)
 }
 
 type workerServiceClient struct {
@@ -81,40 +58,12 @@ func (c *workerServiceClient) RunJob(ctx context.Context, opts ...grpc.CallOptio
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type WorkerService_RunJobClient = grpc.BidiStreamingClient[WorkerUpdate, JobCommand]
 
-func (c *workerServiceClient) Predict(ctx context.Context, in *PredictRequest, opts ...grpc.CallOption) (*PredictResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(PredictResponse)
-	err := c.cc.Invoke(ctx, WorkerService_Predict_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // WorkerServiceServer is the server API for WorkerService service.
 // All implementations must embed UnimplementedWorkerServiceServer
 // for forward compatibility.
 //
-// WorkerService defines the communication contract between the Go API
-// (server) and Python ML worker processes (clients).
-//
-// Architecture:
-//
-//	Go API spawns Python workers as child processes. Each worker connects
-//	back to the Go gRPC server to report progress and deliver results.
-//
-// Training flow:
-//  1. Go spawns a Python worker with job config passed via CLI args.
-//  2. Worker opens a RunJob bidirectional stream.
-//  3. Worker sends JobStarted, then streams TrainingProgress updates.
-//  4. Go can send CancelJob at any point to abort training.
-//  5. Worker sends JobCompleted (with pickled model) or JobFailed.
-//  6. Worker closes the stream and exits.
-//
-// Prediction flow:
-//  1. Go loads model artifact from the app database.
-//  2. Go spawns (or reuses) a Python worker and calls Predict.
-//  3. Worker deserializes the model, runs inference, returns predictions.
+// WorkerService defines the communication contract between the API
+// (server) and worker processes (clients).
 type WorkerServiceServer interface {
 	// RunJob establishes a bidirectional stream for a single training job.
 	// The worker (client) streams WorkerUpdate messages to report lifecycle
@@ -122,10 +71,6 @@ type WorkerServiceServer interface {
 	// the worker (e.g. cancellation). The stream remains open for the
 	// duration of the training job.
 	RunJob(grpc.BidiStreamingServer[WorkerUpdate, JobCommand]) error
-	// Predict runs inference using a previously trained model.
-	// The model artifact (pickled bytes) and input features are provided
-	// in the request. Returns predictions in the same order as input rows.
-	Predict(context.Context, *PredictRequest) (*PredictResponse, error)
 	mustEmbedUnimplementedWorkerServiceServer()
 }
 
@@ -138,9 +83,6 @@ type UnimplementedWorkerServiceServer struct{}
 
 func (UnimplementedWorkerServiceServer) RunJob(grpc.BidiStreamingServer[WorkerUpdate, JobCommand]) error {
 	return status.Error(codes.Unimplemented, "method RunJob not implemented")
-}
-func (UnimplementedWorkerServiceServer) Predict(context.Context, *PredictRequest) (*PredictResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Predict not implemented")
 }
 func (UnimplementedWorkerServiceServer) mustEmbedUnimplementedWorkerServiceServer() {}
 func (UnimplementedWorkerServiceServer) testEmbeddedByValue()                       {}
@@ -170,36 +112,13 @@ func _WorkerService_RunJob_Handler(srv interface{}, stream grpc.ServerStream) er
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type WorkerService_RunJobServer = grpc.BidiStreamingServer[WorkerUpdate, JobCommand]
 
-func _WorkerService_Predict_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PredictRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(WorkerServiceServer).Predict(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: WorkerService_Predict_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkerServiceServer).Predict(ctx, req.(*PredictRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // WorkerService_ServiceDesc is the grpc.ServiceDesc for WorkerService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var WorkerService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "workers.WorkerService",
 	HandlerType: (*WorkerServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "Predict",
-			Handler:    _WorkerService_Predict_Handler,
-		},
-	},
+	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "RunJob",

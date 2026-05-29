@@ -1,7 +1,7 @@
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
-from collections.abc import Iterable as _Iterable, Mapping as _Mapping
+from collections.abc import Mapping as _Mapping
 from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
@@ -81,17 +81,3 @@ class JobFailed(_message.Message):
     error_message: str
     traceback: str
     def __init__(self, error_message: _Optional[str] = ..., traceback: _Optional[str] = ...) -> None: ...
-
-class PredictRequest(_message.Message):
-    __slots__ = ("model_id", "feature_rows_json")
-    MODEL_ID_FIELD_NUMBER: _ClassVar[int]
-    FEATURE_ROWS_JSON_FIELD_NUMBER: _ClassVar[int]
-    model_id: str
-    feature_rows_json: _containers.RepeatedScalarFieldContainer[str]
-    def __init__(self, model_id: _Optional[str] = ..., feature_rows_json: _Optional[_Iterable[str]] = ...) -> None: ...
-
-class PredictResponse(_message.Message):
-    __slots__ = ("predictions",)
-    PREDICTIONS_FIELD_NUMBER: _ClassVar[int]
-    predictions: _containers.RepeatedScalarFieldContainer[float]
-    def __init__(self, predictions: _Optional[_Iterable[float]] = ...) -> None: ...

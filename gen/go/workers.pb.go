@@ -21,7 +21,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// WorkerUpdate is sent by the Python worker to the Go API over the
+// WorkerUpdate is sent by the worker to the API over the
 // RunJob stream. Each message is tagged with the job_id and carries
 // exactly one lifecycle event as the payload.
 type WorkerUpdate struct {
@@ -146,7 +146,7 @@ func (*WorkerUpdate_Completed) isWorkerUpdate_Payload() {}
 
 func (*WorkerUpdate_Failed) isWorkerUpdate_Payload() {}
 
-// JobCommand is sent by the Go API to the Python worker over the
+// JobCommand is sent by the API to the worker over the
 // RunJob stream. Used to control the worker during training.
 type JobCommand struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -386,7 +386,7 @@ func (x *TrainingProgress) GetMetrics() map[string]float32 {
 // before the worker closes the stream.
 type JobCompleted struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	ModelArtifact      []byte                 `protobuf:"bytes,1,opt,name=model_artifact,json=modelArtifact,proto3" json:"model_artifact,omitempty"`                                            // Python pickle-serialized model bytes
+	ModelArtifact      []byte                 `protobuf:"bytes,1,opt,name=model_artifact,json=modelArtifact,proto3" json:"model_artifact,omitempty"`                                            // Serialized model bytes
 	Metrics            map[string]float32     `protobuf:"bytes,2,rep,name=metrics,proto3" json:"metrics,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"fixed32,2,opt,name=value"` // Final evaluation metrics on test set
 	TrainingDurationMs int64                  `protobuf:"varint,3,opt,name=training_duration_ms,json=trainingDurationMs,proto3" json:"training_duration_ms,omitempty"`                          // Wall-clock training time in milliseconds
 	unknownFields      protoimpl.UnknownFields
@@ -450,7 +450,7 @@ func (x *JobCompleted) GetTrainingDurationMs() int64 {
 type JobFailed struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ErrorMessage  string                 `protobuf:"bytes,1,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"` // Human-readable error description
-	Traceback     string                 `protobuf:"bytes,2,opt,name=traceback,proto3" json:"traceback,omitempty"`                           // Python traceback for debugging
+	Traceback     string                 `protobuf:"bytes,2,opt,name=traceback,proto3" json:"traceback,omitempty"`                           // Traceback for debugging
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -499,110 +499,6 @@ func (x *JobFailed) GetTraceback() string {
 	return ""
 }
 
-// PredictRequest asks the worker to run inference on one or more
-// input rows using a previously trained model.
-type PredictRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Identifier of the trained model in the app database.
-	ModelId string `protobuf:"bytes,1,opt,name=model_id,json=modelId,proto3" json:"model_id,omitempty"`
-	// Each entry is a JSON object mapping feature names to values.
-	// JSON is used here for flexibility during the PoC phase.
-	// Example: ["{\"age\": 30, \"income\": 50000}"]
-	FeatureRowsJson []string `protobuf:"bytes,2,rep,name=feature_rows_json,json=featureRowsJson,proto3" json:"feature_rows_json,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
-}
-
-func (x *PredictRequest) Reset() {
-	*x = PredictRequest{}
-	mi := &file_workers_proto_msgTypes[7]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PredictRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PredictRequest) ProtoMessage() {}
-
-func (x *PredictRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_workers_proto_msgTypes[7]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PredictRequest.ProtoReflect.Descriptor instead.
-func (*PredictRequest) Descriptor() ([]byte, []int) {
-	return file_workers_proto_rawDescGZIP(), []int{7}
-}
-
-func (x *PredictRequest) GetModelId() string {
-	if x != nil {
-		return x.ModelId
-	}
-	return ""
-}
-
-func (x *PredictRequest) GetFeatureRowsJson() []string {
-	if x != nil {
-		return x.FeatureRowsJson
-	}
-	return nil
-}
-
-// PredictResponse returns model predictions, one per input row,
-// in the same order as the input feature_rows_json.
-type PredictResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Predictions   []float32              `protobuf:"fixed32,1,rep,packed,name=predictions,proto3" json:"predictions,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *PredictResponse) Reset() {
-	*x = PredictResponse{}
-	mi := &file_workers_proto_msgTypes[8]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PredictResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PredictResponse) ProtoMessage() {}
-
-func (x *PredictResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_workers_proto_msgTypes[8]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PredictResponse.ProtoReflect.Descriptor instead.
-func (*PredictResponse) Descriptor() ([]byte, []int) {
-	return file_workers_proto_rawDescGZIP(), []int{8}
-}
-
-func (x *PredictResponse) GetPredictions() []float32 {
-	if x != nil {
-		return x.Predictions
-	}
-	return nil
-}
-
 var File_workers_proto protoreflect.FileDescriptor
 
 const file_workers_proto_rawDesc = "" +
@@ -641,15 +537,9 @@ const file_workers_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\x02R\x05value:\x028\x01\"N\n" +
 	"\tJobFailed\x12#\n" +
 	"\rerror_message\x18\x01 \x01(\tR\ferrorMessage\x12\x1c\n" +
-	"\ttraceback\x18\x02 \x01(\tR\ttraceback\"W\n" +
-	"\x0ePredictRequest\x12\x19\n" +
-	"\bmodel_id\x18\x01 \x01(\tR\amodelId\x12*\n" +
-	"\x11feature_rows_json\x18\x02 \x03(\tR\x0ffeatureRowsJson\"3\n" +
-	"\x0fPredictResponse\x12 \n" +
-	"\vpredictions\x18\x01 \x03(\x02R\vpredictions2\x87\x01\n" +
+	"\ttraceback\x18\x02 \x01(\tR\ttraceback2I\n" +
 	"\rWorkerService\x128\n" +
-	"\x06RunJob\x12\x15.workers.WorkerUpdate\x1a\x13.workers.JobCommand(\x010\x01\x12<\n" +
-	"\aPredict\x12\x17.workers.PredictRequest\x1a\x18.workers.PredictResponseB#Z!github.com/reggie-ml/proto/gen/gob\x06proto3"
+	"\x06RunJob\x12\x15.workers.WorkerUpdate\x1a\x13.workers.JobCommand(\x010\x01B#Z!github.com/reggie-ml/proto/gen/gob\x06proto3"
 
 var (
 	file_workers_proto_rawDescOnce sync.Once
@@ -663,7 +553,7 @@ func file_workers_proto_rawDescGZIP() []byte {
 	return file_workers_proto_rawDescData
 }
 
-var file_workers_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_workers_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_workers_proto_goTypes = []any{
 	(*WorkerUpdate)(nil),     // 0: workers.WorkerUpdate
 	(*JobCommand)(nil),       // 1: workers.JobCommand
@@ -672,28 +562,24 @@ var file_workers_proto_goTypes = []any{
 	(*TrainingProgress)(nil), // 4: workers.TrainingProgress
 	(*JobCompleted)(nil),     // 5: workers.JobCompleted
 	(*JobFailed)(nil),        // 6: workers.JobFailed
-	(*PredictRequest)(nil),   // 7: workers.PredictRequest
-	(*PredictResponse)(nil),  // 8: workers.PredictResponse
-	nil,                      // 9: workers.TrainingProgress.MetricsEntry
-	nil,                      // 10: workers.JobCompleted.MetricsEntry
+	nil,                      // 7: workers.TrainingProgress.MetricsEntry
+	nil,                      // 8: workers.JobCompleted.MetricsEntry
 }
 var file_workers_proto_depIdxs = []int32{
-	3,  // 0: workers.WorkerUpdate.started:type_name -> workers.JobStarted
-	4,  // 1: workers.WorkerUpdate.progress:type_name -> workers.TrainingProgress
-	5,  // 2: workers.WorkerUpdate.completed:type_name -> workers.JobCompleted
-	6,  // 3: workers.WorkerUpdate.failed:type_name -> workers.JobFailed
-	2,  // 4: workers.JobCommand.cancel:type_name -> workers.CancelJob
-	9,  // 5: workers.TrainingProgress.metrics:type_name -> workers.TrainingProgress.MetricsEntry
-	10, // 6: workers.JobCompleted.metrics:type_name -> workers.JobCompleted.MetricsEntry
-	0,  // 7: workers.WorkerService.RunJob:input_type -> workers.WorkerUpdate
-	7,  // 8: workers.WorkerService.Predict:input_type -> workers.PredictRequest
-	1,  // 9: workers.WorkerService.RunJob:output_type -> workers.JobCommand
-	8,  // 10: workers.WorkerService.Predict:output_type -> workers.PredictResponse
-	9,  // [9:11] is the sub-list for method output_type
-	7,  // [7:9] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	3, // 0: workers.WorkerUpdate.started:type_name -> workers.JobStarted
+	4, // 1: workers.WorkerUpdate.progress:type_name -> workers.TrainingProgress
+	5, // 2: workers.WorkerUpdate.completed:type_name -> workers.JobCompleted
+	6, // 3: workers.WorkerUpdate.failed:type_name -> workers.JobFailed
+	2, // 4: workers.JobCommand.cancel:type_name -> workers.CancelJob
+	7, // 5: workers.TrainingProgress.metrics:type_name -> workers.TrainingProgress.MetricsEntry
+	8, // 6: workers.JobCompleted.metrics:type_name -> workers.JobCompleted.MetricsEntry
+	0, // 7: workers.WorkerService.RunJob:input_type -> workers.WorkerUpdate
+	1, // 8: workers.WorkerService.RunJob:output_type -> workers.JobCommand
+	8, // [8:9] is the sub-list for method output_type
+	7, // [7:8] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_workers_proto_init() }
@@ -716,7 +602,7 @@ func file_workers_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_workers_proto_rawDesc), len(file_workers_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
