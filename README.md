@@ -2,7 +2,9 @@
 
 Protocol Buffer definitions for the Reggie ML workers.
 
-## Using the Go module
+## Usage
+
+### Go module
 
 ```go
 import workers "github.com/reggie-ml/proto/gen/go"
@@ -12,10 +14,7 @@ import workers "github.com/reggie-ml/proto/gen/go"
 go get github.com/reggie-ml/proto/gen/go@latest
 ```
 
-## Using the Python package
-
-The generated Python stubs are packaged as `reggie-proto` under `gen/python`.
-Pin to a release tag the same way the Go module is consumed:
+### Python package
 
 ```sh
 pip install "reggie-proto @ git+https://github.com/reggie-ml/proto@v0.1.0#subdirectory=gen/python"

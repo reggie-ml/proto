@@ -3,7 +3,7 @@ package workers;
 
 option go_package = "github.com/reggie-ml/proto/gen/go";
 
-// WorkerService defines the communication contract between the Go API
+// WorkerService defines the communication contract between the API
 // (server) and worker processes (clients).
 service WorkerService {
   // RunJob establishes a bidirectional stream for a single training job.

@@ -58,11 +58,8 @@ jobs:
 
       - name: Fix Python package import and sync version
         run: |
-          # The grpc Python plugin emits a bare `import workers_pb2`; rewrite it
-          # to a package-relative import so `reggie_proto` installs cleanly.
           sed -i 's/^import workers_pb2 as/from reggie_proto import workers_pb2 as/' \
             gen/python/reggie_proto/workers_pb2_grpc.py
-          # Keep the packaged version in lockstep with the VERSION file.
           sed -i "s/^version = \".*\"/version = \"$(cat VERSION)\"/" \
             gen/python/pyproject.toml
 
@@ -78,8 +75,6 @@ jobs:
             echo "No regeneration changes to commit."
           else
             git commit -m "regenerate proto"
-            # Pushing with GITHUB_TOKEN to the PR's own branch is allowed and
-            # does not re-trigger workflows (so no loop).
             git push origin "HEAD:${{ github.head_ref }}"
           fi
 
