@@ -6,25 +6,8 @@ from reggie_proto import workers_pb2 as workers__pb2
 
 
 class WorkerServiceStub(object):
-    """WorkerService defines the communication contract between the Go API
-    (server) and Python ML worker processes (clients).
-
-    Architecture:
-    Go API spawns Python workers as child processes. Each worker connects
-    back to the Go gRPC server to report progress and deliver results.
-
-    Training flow:
-    1. Go spawns a Python worker with job config passed via CLI args.
-    2. Worker opens a RunJob bidirectional stream.
-    3. Worker sends JobStarted, then streams TrainingProgress updates.
-    4. Go can send CancelJob at any point to abort training.
-    5. Worker sends JobCompleted (with pickled model) or JobFailed.
-    6. Worker closes the stream and exits.
-
-    Prediction flow:
-    1. Go loads model artifact from the app database.
-    2. Go spawns (or reuses) a Python worker and calls Predict.
-    3. Worker deserializes the model, runs inference, returns predictions.
+    """WorkerService defines the communication contract between the API
+    (server) and worker processes (clients).
     """
 
     def __init__(self, channel):
@@ -38,33 +21,11 @@ class WorkerServiceStub(object):
                 request_serializer=workers__pb2.WorkerUpdate.SerializeToString,
                 response_deserializer=workers__pb2.JobCommand.FromString,
                 _registered_method=True)
-        self.Predict = channel.unary_unary(
-                '/workers.WorkerService/Predict',
-                request_serializer=workers__pb2.PredictRequest.SerializeToString,
-                response_deserializer=workers__pb2.PredictResponse.FromString,
-                _registered_method=True)
 
 
 class WorkerServiceServicer(object):
-    """WorkerService defines the communication contract between the Go API
-    (server) and Python ML worker processes (clients).
-
-    Architecture:
-    Go API spawns Python workers as child processes. Each worker connects
-    back to the Go gRPC server to report progress and deliver results.
-
-    Training flow:
-    1. Go spawns a Python worker with job config passed via CLI args.
-    2. Worker opens a RunJob bidirectional stream.
-    3. Worker sends JobStarted, then streams TrainingProgress updates.
-    4. Go can send CancelJob at any point to abort training.
-    5. Worker sends JobCompleted (with pickled model) or JobFailed.
-    6. Worker closes the stream and exits.
-
-    Prediction flow:
-    1. Go loads model artifact from the app database.
-    2. Go spawns (or reuses) a Python worker and calls Predict.
-    3. Worker deserializes the model, runs inference, returns predictions.
+    """WorkerService defines the communication contract between the API
+    (server) and worker processes (clients).
     """
 
     def RunJob(self, request_iterator, context):
@@ -78,15 +39,6 @@ class WorkerServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def Predict(self, request, context):
-        """Predict runs inference using a previously trained model.
-        The model artifact (pickled bytes) and input features are provided
-        in the request. Returns predictions in the same order as input rows.
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
 
 def add_WorkerServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -94,11 +46,6 @@ def add_WorkerServiceServicer_to_server(servicer, server):
                     servicer.RunJob,
                     request_deserializer=workers__pb2.WorkerUpdate.FromString,
                     response_serializer=workers__pb2.JobCommand.SerializeToString,
-            ),
-            'Predict': grpc.unary_unary_rpc_method_handler(
-                    servicer.Predict,
-                    request_deserializer=workers__pb2.PredictRequest.FromString,
-                    response_serializer=workers__pb2.PredictResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -109,25 +56,8 @@ def add_WorkerServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class WorkerService(object):
-    """WorkerService defines the communication contract between the Go API
-    (server) and Python ML worker processes (clients).
-
-    Architecture:
-    Go API spawns Python workers as child processes. Each worker connects
-    back to the Go gRPC server to report progress and deliver results.
-
-    Training flow:
-    1. Go spawns a Python worker with job config passed via CLI args.
-    2. Worker opens a RunJob bidirectional stream.
-    3. Worker sends JobStarted, then streams TrainingProgress updates.
-    4. Go can send CancelJob at any point to abort training.
-    5. Worker sends JobCompleted (with pickled model) or JobFailed.
-    6. Worker closes the stream and exits.
-
-    Prediction flow:
-    1. Go loads model artifact from the app database.
-    2. Go spawns (or reuses) a Python worker and calls Predict.
-    3. Worker deserializes the model, runs inference, returns predictions.
+    """WorkerService defines the communication contract between the API
+    (server) and worker processes (clients).
     """
 
     @staticmethod
@@ -147,33 +77,6 @@ class WorkerService(object):
             '/workers.WorkerService/RunJob',
             workers__pb2.WorkerUpdate.SerializeToString,
             workers__pb2.JobCommand.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def Predict(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/workers.WorkerService/Predict',
-            workers__pb2.PredictRequest.SerializeToString,
-            workers__pb2.PredictResponse.FromString,
             options,
             channel_credentials,
             insecure,
