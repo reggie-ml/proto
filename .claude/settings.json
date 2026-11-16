@@ -25,7 +25,12 @@
     ],
     "ask": [
       "Bash(git push*)",
-      "Bash(git tag *)",
+      "Bash(git tag v*)",
+      "Bash(git tag \"v*)",
+      "Bash(git tag gen/*)",
+      "Bash(git tag -a*)",
+      "Bash(git tag -d*)",
+      "Bash(git tag -f*)",
       "Bash(gh pr create*)"
     ],
     "deny": [
