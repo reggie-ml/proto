@@ -16,8 +16,8 @@ class WorkerServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.RunJob = channel.stream_stream(
-                '/workers.WorkerService/RunJob',
+        self.RunTraining = channel.stream_stream(
+                '/workers.WorkerService/RunTraining',
                 request_serializer=workers__pb2.WorkerUpdate.SerializeToString,
                 response_deserializer=workers__pb2.JobCommand.FromString,
                 _registered_method=True)
@@ -28,8 +28,8 @@ class WorkerServiceServicer(object):
     (server) and worker processes (clients).
     """
 
-    def RunJob(self, request_iterator, context):
-        """RunJob establishes a bidirectional stream for a single training job.
+    def RunTraining(self, request_iterator, context):
+        """RunTraining establishes a bidirectional stream for a single training job.
         The worker (client) streams WorkerUpdate messages to report lifecycle
         events and progress. The server streams JobCommand messages to control
         the worker (e.g. cancellation). The stream remains open for the
@@ -42,8 +42,8 @@ class WorkerServiceServicer(object):
 
 def add_WorkerServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'RunJob': grpc.stream_stream_rpc_method_handler(
-                    servicer.RunJob,
+            'RunTraining': grpc.stream_stream_rpc_method_handler(
+                    servicer.RunTraining,
                     request_deserializer=workers__pb2.WorkerUpdate.FromString,
                     response_serializer=workers__pb2.JobCommand.SerializeToString,
             ),
@@ -61,7 +61,7 @@ class WorkerService(object):
     """
 
     @staticmethod
-    def RunJob(request_iterator,
+    def RunTraining(request_iterator,
             target,
             options=(),
             channel_credentials=None,
@@ -74,7 +74,7 @@ class WorkerService(object):
         return grpc.experimental.stream_stream(
             request_iterator,
             target,
-            '/workers.WorkerService/RunJob',
+            '/workers.WorkerService/RunTraining',
             workers__pb2.WorkerUpdate.SerializeToString,
             workers__pb2.JobCommand.FromString,
             options,

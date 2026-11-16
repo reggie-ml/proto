@@ -6,16 +6,16 @@ option go_package = "github.com/reggie-ml/proto/gen/go";
 // WorkerService defines the communication contract between the API
 // (server) and worker processes (clients).
 service WorkerService {
-  // RunJob establishes a bidirectional stream for a single training job.
+  // RunTraining establishes a bidirectional stream for a single training job.
   // The worker (client) streams WorkerUpdate messages to report lifecycle
   // events and progress. The server streams JobCommand messages to control
   // the worker (e.g. cancellation). The stream remains open for the
   // duration of the training job.
-  rpc RunJob(stream WorkerUpdate) returns (stream JobCommand);
+  rpc RunTraining(stream WorkerUpdate) returns (stream JobCommand);
 }
 
 // WorkerUpdate is sent by the worker to the API over the
-// RunJob stream. Each message is tagged with the job_id and carries
+// RunTraining stream. Each message is tagged with the job_id and carries
 // exactly one lifecycle event as the payload.
 message WorkerUpdate {
   string job_id = 1;
@@ -28,7 +28,7 @@ message WorkerUpdate {
 }
 
 // JobCommand is sent by the API to the worker over the
-// RunJob stream. Used to control the worker during training.
+// RunTraining stream. Used to control the worker during training.
 message JobCommand {
   oneof command {
     CancelJob cancel = 1;
@@ -43,7 +43,7 @@ message CancelJob {
 }
 
 // JobStarted is the first message a worker sends after opening the
-// RunJob stream, confirming it has initialized and is ready to train.
+// RunTraining stream, confirming it has initialized and is ready to train.
 message JobStarted {
   // Unique identifier for this worker process, useful for logging
   // and correlating with OS-level process management.

@@ -19,7 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	WorkerService_RunJob_FullMethodName = "/workers.WorkerService/RunJob"
+	WorkerService_RunTraining_FullMethodName = "/workers.WorkerService/RunTraining"
 )
 
 // WorkerServiceClient is the client API for WorkerService service.
@@ -29,12 +29,12 @@ const (
 // WorkerService defines the communication contract between the API
 // (server) and worker processes (clients).
 type WorkerServiceClient interface {
-	// RunJob establishes a bidirectional stream for a single training job.
+	// RunTraining establishes a bidirectional stream for a single training job.
 	// The worker (client) streams WorkerUpdate messages to report lifecycle
 	// events and progress. The server streams JobCommand messages to control
 	// the worker (e.g. cancellation). The stream remains open for the
 	// duration of the training job.
-	RunJob(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[WorkerUpdate, JobCommand], error)
+	RunTraining(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[WorkerUpdate, JobCommand], error)
 }
 
 type workerServiceClient struct {
@@ -45,9 +45,9 @@ func NewWorkerServiceClient(cc grpc.ClientConnInterface) WorkerServiceClient {
 	return &workerServiceClient{cc}
 }
 
-func (c *workerServiceClient) RunJob(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[WorkerUpdate, JobCommand], error) {
+func (c *workerServiceClient) RunTraining(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[WorkerUpdate, JobCommand], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &WorkerService_ServiceDesc.Streams[0], WorkerService_RunJob_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &WorkerService_ServiceDesc.Streams[0], WorkerService_RunTraining_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (c *workerServiceClient) RunJob(ctx context.Context, opts ...grpc.CallOptio
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type WorkerService_RunJobClient = grpc.BidiStreamingClient[WorkerUpdate, JobCommand]
+type WorkerService_RunTrainingClient = grpc.BidiStreamingClient[WorkerUpdate, JobCommand]
 
 // WorkerServiceServer is the server API for WorkerService service.
 // All implementations must embed UnimplementedWorkerServiceServer
@@ -65,12 +65,12 @@ type WorkerService_RunJobClient = grpc.BidiStreamingClient[WorkerUpdate, JobComm
 // WorkerService defines the communication contract between the API
 // (server) and worker processes (clients).
 type WorkerServiceServer interface {
-	// RunJob establishes a bidirectional stream for a single training job.
+	// RunTraining establishes a bidirectional stream for a single training job.
 	// The worker (client) streams WorkerUpdate messages to report lifecycle
 	// events and progress. The server streams JobCommand messages to control
 	// the worker (e.g. cancellation). The stream remains open for the
 	// duration of the training job.
-	RunJob(grpc.BidiStreamingServer[WorkerUpdate, JobCommand]) error
+	RunTraining(grpc.BidiStreamingServer[WorkerUpdate, JobCommand]) error
 	mustEmbedUnimplementedWorkerServiceServer()
 }
 
@@ -81,8 +81,8 @@ type WorkerServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedWorkerServiceServer struct{}
 
-func (UnimplementedWorkerServiceServer) RunJob(grpc.BidiStreamingServer[WorkerUpdate, JobCommand]) error {
-	return status.Error(codes.Unimplemented, "method RunJob not implemented")
+func (UnimplementedWorkerServiceServer) RunTraining(grpc.BidiStreamingServer[WorkerUpdate, JobCommand]) error {
+	return status.Error(codes.Unimplemented, "method RunTraining not implemented")
 }
 func (UnimplementedWorkerServiceServer) mustEmbedUnimplementedWorkerServiceServer() {}
 func (UnimplementedWorkerServiceServer) testEmbeddedByValue()                       {}
@@ -105,12 +105,12 @@ func RegisterWorkerServiceServer(s grpc.ServiceRegistrar, srv WorkerServiceServe
 	s.RegisterService(&WorkerService_ServiceDesc, srv)
 }
 
-func _WorkerService_RunJob_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(WorkerServiceServer).RunJob(&grpc.GenericServerStream[WorkerUpdate, JobCommand]{ServerStream: stream})
+func _WorkerService_RunTraining_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(WorkerServiceServer).RunTraining(&grpc.GenericServerStream[WorkerUpdate, JobCommand]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type WorkerService_RunJobServer = grpc.BidiStreamingServer[WorkerUpdate, JobCommand]
+type WorkerService_RunTrainingServer = grpc.BidiStreamingServer[WorkerUpdate, JobCommand]
 
 // WorkerService_ServiceDesc is the grpc.ServiceDesc for WorkerService service.
 // It's only intended for direct use with grpc.RegisterService,
@@ -121,8 +121,8 @@ var WorkerService_ServiceDesc = grpc.ServiceDesc{
 	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "RunJob",
-			Handler:       _WorkerService_RunJob_Handler,
+			StreamName:    "RunTraining",
+			Handler:       _WorkerService_RunTraining_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},
