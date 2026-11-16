@@ -22,7 +22,7 @@ const (
 )
 
 // WorkerUpdate is sent by the worker to the API over the
-// RunJob stream. Each message is tagged with the job_id and carries
+// RunTraining stream. Each message is tagged with the job_id and carries
 // exactly one lifecycle event as the payload.
 type WorkerUpdate struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -147,7 +147,7 @@ func (*WorkerUpdate_Completed) isWorkerUpdate_Payload() {}
 func (*WorkerUpdate_Failed) isWorkerUpdate_Payload() {}
 
 // JobCommand is sent by the API to the worker over the
-// RunJob stream. Used to control the worker during training.
+// RunTraining stream. Used to control the worker during training.
 type JobCommand struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Command:
@@ -262,7 +262,7 @@ func (x *CancelJob) GetReason() string {
 }
 
 // JobStarted is the first message a worker sends after opening the
-// RunJob stream, confirming it has initialized and is ready to train.
+// RunTraining stream, confirming it has initialized and is ready to train.
 type JobStarted struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Unique identifier for this worker process, useful for logging
@@ -537,9 +537,9 @@ const file_workers_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\x02R\x05value:\x028\x01\"N\n" +
 	"\tJobFailed\x12#\n" +
 	"\rerror_message\x18\x01 \x01(\tR\ferrorMessage\x12\x1c\n" +
-	"\ttraceback\x18\x02 \x01(\tR\ttraceback2I\n" +
-	"\rWorkerService\x128\n" +
-	"\x06RunJob\x12\x15.workers.WorkerUpdate\x1a\x13.workers.JobCommand(\x010\x01B#Z!github.com/reggie-ml/proto/gen/gob\x06proto3"
+	"\ttraceback\x18\x02 \x01(\tR\ttraceback2N\n" +
+	"\rWorkerService\x12=\n" +
+	"\vRunTraining\x12\x15.workers.WorkerUpdate\x1a\x13.workers.JobCommand(\x010\x01B#Z!github.com/reggie-ml/proto/gen/gob\x06proto3"
 
 var (
 	file_workers_proto_rawDescOnce sync.Once
@@ -573,8 +573,8 @@ var file_workers_proto_depIdxs = []int32{
 	2, // 4: workers.JobCommand.cancel:type_name -> workers.CancelJob
 	7, // 5: workers.TrainingProgress.metrics:type_name -> workers.TrainingProgress.MetricsEntry
 	8, // 6: workers.JobCompleted.metrics:type_name -> workers.JobCompleted.MetricsEntry
-	0, // 7: workers.WorkerService.RunJob:input_type -> workers.WorkerUpdate
-	1, // 8: workers.WorkerService.RunJob:output_type -> workers.JobCommand
+	0, // 7: workers.WorkerService.RunTraining:input_type -> workers.WorkerUpdate
+	1, // 8: workers.WorkerService.RunTraining:output_type -> workers.JobCommand
 	8, // [8:9] is the sub-list for method output_type
 	7, // [7:8] is the sub-list for method input_type
 	7, // [7:7] is the sub-list for extension type_name

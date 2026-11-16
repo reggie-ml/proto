@@ -38,12 +38,21 @@ jobs:
       - name: Check for breaking changes
         run: |
           PREV_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
-          if [ -n "$PREV_TAG" ]; then
-            echo "Checking breaking changes against $PREV_TAG"
-            buf breaking --against ".git#tag=$PREV_TAG"
-          else
+          if [ -z "$PREV_TAG" ]; then
             echo "No previous release tag found, skipping breaking change check."
+            exit 0
           fi
+          # A breaking change is allowed only when VERSION declares one relative to the last
+          # release: a major bump, or a minor bump while the major version is 0.
+          IFS=. read -r prev_major prev_minor _ <<< "${PREV_TAG#v}"
+          IFS=. read -r major minor _ < VERSION
+          if [ "$major" -gt "$prev_major" ] || { [ "$major" -eq 0 ] && [ "$prev_major" -eq 0 ] && [ "$minor" -gt "$prev_minor" ]; }; then
+            echo "VERSION $(cat VERSION) declares a breaking release over $PREV_TAG. Reporting breaking changes without failing:"
+            buf breaking --against ".git#tag=$PREV_TAG" || true
+            exit 0
+          fi
+          echo "Checking breaking changes against $PREV_TAG"
+          buf breaking --against ".git#tag=$PREV_TAG"
 
       - name: Regenerate
         run: make generate

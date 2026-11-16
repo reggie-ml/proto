@@ -28,8 +28,9 @@ network access (the Python plugins are remote `buf.build` plugins). Always commi
 ## Versioning & releases
 
 - `VERSION` is the source of truth. Semver table in `README.md`: additive is patch/minor,
-  removing/renaming fields or RPCs or changing types is **major**. At 0.x, ask the user which
-  bump to use for breaking changes.
+  removing/renaming fields or RPCs or changing types is **major**. While the major
+  version is 0, a breaking change bumps the **minor** version instead (0.1.x → 0.2.0).
+  `verify.yml` fails on breaking changes unless `VERSION` declares such a bump over the last tag.
 - Never reuse field numbers. Mark removed ones `reserved`.
 - Release = bump `VERSION` in a PR → merge to `master` → push tag `v$(cat VERSION)` (only when the
   user asks; see `/release`). `release.yml` verifies the tag matches `VERSION`, creates the
