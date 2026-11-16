@@ -19,15 +19,18 @@ jobs:
         with:
           python-version: "3.12"
 
+      # Codegen tools are pinned to the versions that produced the committed gen/, so this
+      # check only fails when the PR itself makes gen/ stale. The remote Python plugins are
+      # pinned in buf.gen.yaml. To upgrade: bump the pins and commit the regenerated gen/.
       - name: Install buf
         run: |
-          curl -sSL https://github.com/bufbuild/buf/releases/latest/download/buf-Linux-x86_64 -o /usr/local/bin/buf
+          curl -fsSL https://github.com/bufbuild/buf/releases/download/v1.70.0/buf-Linux-x86_64 -o /usr/local/bin/buf
           chmod +x /usr/local/bin/buf
 
       - name: Install protoc plugins
         run: |
-          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.6.2
 
       - name: Lint
         run: buf lint
