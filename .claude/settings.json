@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(git branch*)",
+      "Bash(git tag --list*)",
+      "Bash(git tag --sort*)",
+      "Bash(git rev-parse*)",
+      "Bash(git fetch*)",
+      "Bash(git switch -c *)",
+      "Bash(gh pr view*)",
+      "Bash(gh pr list*)",
+      "Bash(gh pr checks*)",
+      "Bash(gh run list*)",
+      "Bash(gh run view*)",
+      "Bash(buf lint*)",
+      "Bash(buf breaking*)",
+      "Bash(buf generate*)",
+      "Bash(make generate)",
+      "Bash(go build*)"
+    ],
+    "ask": [
+      "Bash(git push*)",
+      "Bash(git tag v*)",
+      "Bash(git tag \"v*)",
+      "Bash(git tag gen/*)",
+      "Bash(git tag -a*)",
+      "Bash(git tag -d*)",
+      "Bash(git tag -f*)",
+      "Bash(gh pr create*)"
+    ],
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push --tags*)",
+      "Bash(git push origin master*)",
+      "Bash(git reset --hard*)",
+      "Bash(gh pr merge*)",
+      "Bash(gh release*)",
+      "Edit(./gen/**)",
+      "Write(./gen/**)"
+    ]
+  }
+}
