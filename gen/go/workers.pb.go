@@ -21,37 +21,208 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// WorkerUpdate is sent by the worker to the API over the
-// RunTraining stream. Each message is tagged with the job_id and carries
-// exactly one lifecycle event as the payload.
-type WorkerUpdate struct {
+// Stage is the part of the run the worker is in.
+type Stage int32
+
+const (
+	Stage_STAGE_UNSPECIFIED   Stage = 0
+	Stage_STAGE_LOADING_DATA  Stage = 1
+	Stage_STAGE_PREPROCESSING Stage = 2
+	Stage_STAGE_TRAINING      Stage = 3
+	Stage_STAGE_EVALUATING    Stage = 4
+	Stage_STAGE_SAVING        Stage = 5
+)
+
+// Enum value maps for Stage.
+var (
+	Stage_name = map[int32]string{
+		0: "STAGE_UNSPECIFIED",
+		1: "STAGE_LOADING_DATA",
+		2: "STAGE_PREPROCESSING",
+		3: "STAGE_TRAINING",
+		4: "STAGE_EVALUATING",
+		5: "STAGE_SAVING",
+	}
+	Stage_value = map[string]int32{
+		"STAGE_UNSPECIFIED":   0,
+		"STAGE_LOADING_DATA":  1,
+		"STAGE_PREPROCESSING": 2,
+		"STAGE_TRAINING":      3,
+		"STAGE_EVALUATING":    4,
+		"STAGE_SAVING":        5,
+	}
+)
+
+func (x Stage) Enum() *Stage {
+	p := new(Stage)
+	*p = x
+	return p
+}
+
+func (x Stage) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Stage) Descriptor() protoreflect.EnumDescriptor {
+	return file_workers_proto_enumTypes[0].Descriptor()
+}
+
+func (Stage) Type() protoreflect.EnumType {
+	return &file_workers_proto_enumTypes[0]
+}
+
+func (x Stage) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Stage.Descriptor instead.
+func (Stage) EnumDescriptor() ([]byte, []int) {
+	return file_workers_proto_rawDescGZIP(), []int{0}
+}
+
+// LogLevel is the severity of a LogLine.
+type LogLevel int32
+
+const (
+	LogLevel_LOG_LEVEL_UNSPECIFIED LogLevel = 0
+	LogLevel_LOG_LEVEL_DEBUG       LogLevel = 1
+	LogLevel_LOG_LEVEL_INFO        LogLevel = 2
+	LogLevel_LOG_LEVEL_WARNING     LogLevel = 3
+	LogLevel_LOG_LEVEL_ERROR       LogLevel = 4
+)
+
+// Enum value maps for LogLevel.
+var (
+	LogLevel_name = map[int32]string{
+		0: "LOG_LEVEL_UNSPECIFIED",
+		1: "LOG_LEVEL_DEBUG",
+		2: "LOG_LEVEL_INFO",
+		3: "LOG_LEVEL_WARNING",
+		4: "LOG_LEVEL_ERROR",
+	}
+	LogLevel_value = map[string]int32{
+		"LOG_LEVEL_UNSPECIFIED": 0,
+		"LOG_LEVEL_DEBUG":       1,
+		"LOG_LEVEL_INFO":        2,
+		"LOG_LEVEL_WARNING":     3,
+		"LOG_LEVEL_ERROR":       4,
+	}
+)
+
+func (x LogLevel) Enum() *LogLevel {
+	p := new(LogLevel)
+	*p = x
+	return p
+}
+
+func (x LogLevel) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (LogLevel) Descriptor() protoreflect.EnumDescriptor {
+	return file_workers_proto_enumTypes[1].Descriptor()
+}
+
+func (LogLevel) Type() protoreflect.EnumType {
+	return &file_workers_proto_enumTypes[1]
+}
+
+func (x LogLevel) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use LogLevel.Descriptor instead.
+func (LogLevel) EnumDescriptor() ([]byte, []int) {
+	return file_workers_proto_rawDescGZIP(), []int{1}
+}
+
+// ArtifactFormat says how the model bytes are serialized.
+type ArtifactFormat int32
+
+const (
+	ArtifactFormat_ARTIFACT_FORMAT_UNSPECIFIED ArtifactFormat = 0
+	// Python pickle. Loading it runs arbitrary code: only load artifacts from
+	// trusted workers.
+	ArtifactFormat_ARTIFACT_FORMAT_PICKLE ArtifactFormat = 1
+	// Keras native format (.keras).
+	ArtifactFormat_ARTIFACT_FORMAT_KERAS ArtifactFormat = 2
+)
+
+// Enum value maps for ArtifactFormat.
+var (
+	ArtifactFormat_name = map[int32]string{
+		0: "ARTIFACT_FORMAT_UNSPECIFIED",
+		1: "ARTIFACT_FORMAT_PICKLE",
+		2: "ARTIFACT_FORMAT_KERAS",
+	}
+	ArtifactFormat_value = map[string]int32{
+		"ARTIFACT_FORMAT_UNSPECIFIED": 0,
+		"ARTIFACT_FORMAT_PICKLE":      1,
+		"ARTIFACT_FORMAT_KERAS":       2,
+	}
+)
+
+func (x ArtifactFormat) Enum() *ArtifactFormat {
+	p := new(ArtifactFormat)
+	*p = x
+	return p
+}
+
+func (x ArtifactFormat) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ArtifactFormat) Descriptor() protoreflect.EnumDescriptor {
+	return file_workers_proto_enumTypes[2].Descriptor()
+}
+
+func (ArtifactFormat) Type() protoreflect.EnumType {
+	return &file_workers_proto_enumTypes[2]
+}
+
+func (x ArtifactFormat) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ArtifactFormat.Descriptor instead.
+func (ArtifactFormat) EnumDescriptor() ([]byte, []int) {
+	return file_workers_proto_rawDescGZIP(), []int{2}
+}
+
+// WorkerMessage is one message from the worker to conductor.
+type WorkerMessage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	JobId string                 `protobuf:"bytes,1,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
+	// The run this stream belongs to. Identical on every message of a stream.
+	RunId string `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
 	// Types that are valid to be assigned to Payload:
 	//
-	//	*WorkerUpdate_Started
-	//	*WorkerUpdate_Progress
-	//	*WorkerUpdate_Completed
-	//	*WorkerUpdate_Failed
-	Payload       isWorkerUpdate_Payload `protobuf_oneof:"payload"`
+	//	*WorkerMessage_Started
+	//	*WorkerMessage_Progress
+	//	*WorkerMessage_Log
+	//	*WorkerMessage_Heartbeat
+	//	*WorkerMessage_ArtifactChunk
+	//	*WorkerMessage_Completed
+	//	*WorkerMessage_Failed
+	//	*WorkerMessage_Cancelled
+	Payload       isWorkerMessage_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *WorkerUpdate) Reset() {
-	*x = WorkerUpdate{}
+func (x *WorkerMessage) Reset() {
+	*x = WorkerMessage{}
 	mi := &file_workers_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *WorkerUpdate) String() string {
+func (x *WorkerMessage) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*WorkerUpdate) ProtoMessage() {}
+func (*WorkerMessage) ProtoMessage() {}
 
-func (x *WorkerUpdate) ProtoReflect() protoreflect.Message {
+func (x *WorkerMessage) ProtoReflect() protoreflect.Message {
 	mi := &file_workers_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -63,115 +234,174 @@ func (x *WorkerUpdate) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use WorkerUpdate.ProtoReflect.Descriptor instead.
-func (*WorkerUpdate) Descriptor() ([]byte, []int) {
+// Deprecated: Use WorkerMessage.ProtoReflect.Descriptor instead.
+func (*WorkerMessage) Descriptor() ([]byte, []int) {
 	return file_workers_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *WorkerUpdate) GetJobId() string {
+func (x *WorkerMessage) GetRunId() string {
 	if x != nil {
-		return x.JobId
+		return x.RunId
 	}
 	return ""
 }
 
-func (x *WorkerUpdate) GetPayload() isWorkerUpdate_Payload {
+func (x *WorkerMessage) GetPayload() isWorkerMessage_Payload {
 	if x != nil {
 		return x.Payload
 	}
 	return nil
 }
 
-func (x *WorkerUpdate) GetStarted() *JobStarted {
+func (x *WorkerMessage) GetStarted() *RunStarted {
 	if x != nil {
-		if x, ok := x.Payload.(*WorkerUpdate_Started); ok {
+		if x, ok := x.Payload.(*WorkerMessage_Started); ok {
 			return x.Started
 		}
 	}
 	return nil
 }
 
-func (x *WorkerUpdate) GetProgress() *TrainingProgress {
+func (x *WorkerMessage) GetProgress() *Progress {
 	if x != nil {
-		if x, ok := x.Payload.(*WorkerUpdate_Progress); ok {
+		if x, ok := x.Payload.(*WorkerMessage_Progress); ok {
 			return x.Progress
 		}
 	}
 	return nil
 }
 
-func (x *WorkerUpdate) GetCompleted() *JobCompleted {
+func (x *WorkerMessage) GetLog() *LogLine {
 	if x != nil {
-		if x, ok := x.Payload.(*WorkerUpdate_Completed); ok {
+		if x, ok := x.Payload.(*WorkerMessage_Log); ok {
+			return x.Log
+		}
+	}
+	return nil
+}
+
+func (x *WorkerMessage) GetHeartbeat() *Heartbeat {
+	if x != nil {
+		if x, ok := x.Payload.(*WorkerMessage_Heartbeat); ok {
+			return x.Heartbeat
+		}
+	}
+	return nil
+}
+
+func (x *WorkerMessage) GetArtifactChunk() *ArtifactChunk {
+	if x != nil {
+		if x, ok := x.Payload.(*WorkerMessage_ArtifactChunk); ok {
+			return x.ArtifactChunk
+		}
+	}
+	return nil
+}
+
+func (x *WorkerMessage) GetCompleted() *RunCompleted {
+	if x != nil {
+		if x, ok := x.Payload.(*WorkerMessage_Completed); ok {
 			return x.Completed
 		}
 	}
 	return nil
 }
 
-func (x *WorkerUpdate) GetFailed() *JobFailed {
+func (x *WorkerMessage) GetFailed() *RunFailed {
 	if x != nil {
-		if x, ok := x.Payload.(*WorkerUpdate_Failed); ok {
+		if x, ok := x.Payload.(*WorkerMessage_Failed); ok {
 			return x.Failed
 		}
 	}
 	return nil
 }
 
-type isWorkerUpdate_Payload interface {
-	isWorkerUpdate_Payload()
+func (x *WorkerMessage) GetCancelled() *RunCancelled {
+	if x != nil {
+		if x, ok := x.Payload.(*WorkerMessage_Cancelled); ok {
+			return x.Cancelled
+		}
+	}
+	return nil
 }
 
-type WorkerUpdate_Started struct {
-	Started *JobStarted `protobuf:"bytes,2,opt,name=started,proto3,oneof"`
+type isWorkerMessage_Payload interface {
+	isWorkerMessage_Payload()
 }
 
-type WorkerUpdate_Progress struct {
-	Progress *TrainingProgress `protobuf:"bytes,3,opt,name=progress,proto3,oneof"`
+type WorkerMessage_Started struct {
+	Started *RunStarted `protobuf:"bytes,2,opt,name=started,proto3,oneof"`
 }
 
-type WorkerUpdate_Completed struct {
-	Completed *JobCompleted `protobuf:"bytes,4,opt,name=completed,proto3,oneof"`
+type WorkerMessage_Progress struct {
+	Progress *Progress `protobuf:"bytes,3,opt,name=progress,proto3,oneof"`
 }
 
-type WorkerUpdate_Failed struct {
-	Failed *JobFailed `protobuf:"bytes,5,opt,name=failed,proto3,oneof"`
+type WorkerMessage_Log struct {
+	Log *LogLine `protobuf:"bytes,4,opt,name=log,proto3,oneof"`
 }
 
-func (*WorkerUpdate_Started) isWorkerUpdate_Payload() {}
+type WorkerMessage_Heartbeat struct {
+	Heartbeat *Heartbeat `protobuf:"bytes,5,opt,name=heartbeat,proto3,oneof"`
+}
 
-func (*WorkerUpdate_Progress) isWorkerUpdate_Payload() {}
+type WorkerMessage_ArtifactChunk struct {
+	ArtifactChunk *ArtifactChunk `protobuf:"bytes,6,opt,name=artifact_chunk,json=artifactChunk,proto3,oneof"`
+}
 
-func (*WorkerUpdate_Completed) isWorkerUpdate_Payload() {}
+type WorkerMessage_Completed struct {
+	Completed *RunCompleted `protobuf:"bytes,7,opt,name=completed,proto3,oneof"`
+}
 
-func (*WorkerUpdate_Failed) isWorkerUpdate_Payload() {}
+type WorkerMessage_Failed struct {
+	Failed *RunFailed `protobuf:"bytes,8,opt,name=failed,proto3,oneof"`
+}
 
-// JobCommand is sent by the API to the worker over the
-// RunTraining stream. Used to control the worker during training.
-type JobCommand struct {
+type WorkerMessage_Cancelled struct {
+	Cancelled *RunCancelled `protobuf:"bytes,9,opt,name=cancelled,proto3,oneof"`
+}
+
+func (*WorkerMessage_Started) isWorkerMessage_Payload() {}
+
+func (*WorkerMessage_Progress) isWorkerMessage_Payload() {}
+
+func (*WorkerMessage_Log) isWorkerMessage_Payload() {}
+
+func (*WorkerMessage_Heartbeat) isWorkerMessage_Payload() {}
+
+func (*WorkerMessage_ArtifactChunk) isWorkerMessage_Payload() {}
+
+func (*WorkerMessage_Completed) isWorkerMessage_Payload() {}
+
+func (*WorkerMessage_Failed) isWorkerMessage_Payload() {}
+
+func (*WorkerMessage_Cancelled) isWorkerMessage_Payload() {}
+
+// ConductorMessage is one message from conductor to the worker.
+type ConductorMessage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Command:
 	//
-	//	*JobCommand_Cancel
-	Command       isJobCommand_Command `protobuf_oneof:"command"`
+	//	*ConductorMessage_Cancel
+	Command       isConductorMessage_Command `protobuf_oneof:"command"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *JobCommand) Reset() {
-	*x = JobCommand{}
+func (x *ConductorMessage) Reset() {
+	*x = ConductorMessage{}
 	mi := &file_workers_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *JobCommand) String() string {
+func (x *ConductorMessage) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*JobCommand) ProtoMessage() {}
+func (*ConductorMessage) ProtoMessage() {}
 
-func (x *JobCommand) ProtoReflect() protoreflect.Message {
+func (x *ConductorMessage) ProtoReflect() protoreflect.Message {
 	mi := &file_workers_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -183,61 +413,59 @@ func (x *JobCommand) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use JobCommand.ProtoReflect.Descriptor instead.
-func (*JobCommand) Descriptor() ([]byte, []int) {
+// Deprecated: Use ConductorMessage.ProtoReflect.Descriptor instead.
+func (*ConductorMessage) Descriptor() ([]byte, []int) {
 	return file_workers_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *JobCommand) GetCommand() isJobCommand_Command {
+func (x *ConductorMessage) GetCommand() isConductorMessage_Command {
 	if x != nil {
 		return x.Command
 	}
 	return nil
 }
 
-func (x *JobCommand) GetCancel() *CancelJob {
+func (x *ConductorMessage) GetCancel() *CancelRun {
 	if x != nil {
-		if x, ok := x.Command.(*JobCommand_Cancel); ok {
+		if x, ok := x.Command.(*ConductorMessage_Cancel); ok {
 			return x.Cancel
 		}
 	}
 	return nil
 }
 
-type isJobCommand_Command interface {
-	isJobCommand_Command()
+type isConductorMessage_Command interface {
+	isConductorMessage_Command()
 }
 
-type JobCommand_Cancel struct {
-	Cancel *CancelJob `protobuf:"bytes,1,opt,name=cancel,proto3,oneof"`
+type ConductorMessage_Cancel struct {
+	Cancel *CancelRun `protobuf:"bytes,1,opt,name=cancel,proto3,oneof"`
 }
 
-func (*JobCommand_Cancel) isJobCommand_Command() {}
+func (*ConductorMessage_Cancel) isConductorMessage_Command() {}
 
-// CancelJob instructs the worker to abort the current training job
-// gracefully. The worker should clean up resources and send a JobFailed
-// message before closing the stream.
-type CancelJob struct {
+// CancelRun asks the worker to stop. It answers with RunCancelled.
+type CancelRun struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Reason        string                 `protobuf:"bytes,1,opt,name=reason,proto3" json:"reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *CancelJob) Reset() {
-	*x = CancelJob{}
+func (x *CancelRun) Reset() {
+	*x = CancelRun{}
 	mi := &file_workers_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *CancelJob) String() string {
+func (x *CancelRun) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*CancelJob) ProtoMessage() {}
+func (*CancelRun) ProtoMessage() {}
 
-func (x *CancelJob) ProtoReflect() protoreflect.Message {
+func (x *CancelRun) ProtoReflect() protoreflect.Message {
 	mi := &file_workers_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -249,43 +477,43 @@ func (x *CancelJob) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use CancelJob.ProtoReflect.Descriptor instead.
-func (*CancelJob) Descriptor() ([]byte, []int) {
+// Deprecated: Use CancelRun.ProtoReflect.Descriptor instead.
+func (*CancelRun) Descriptor() ([]byte, []int) {
 	return file_workers_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *CancelJob) GetReason() string {
+func (x *CancelRun) GetReason() string {
 	if x != nil {
 		return x.Reason
 	}
 	return ""
 }
 
-// JobStarted is the first message a worker sends after opening the
-// RunTraining stream, confirming it has initialized and is ready to train.
-type JobStarted struct {
+// RunStarted is the first message of every stream.
+type RunStarted struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Unique identifier for this worker process, useful for logging
-	// and correlating with OS-level process management.
-	WorkerId      string `protobuf:"bytes,1,opt,name=worker_id,json=workerId,proto3" json:"worker_id,omitempty"`
+	// Identifies the worker process, for logs and process management.
+	WorkerId string `protobuf:"bytes,1,opt,name=worker_id,json=workerId,proto3" json:"worker_id,omitempty"`
+	// Version of the worker runtime, e.g. "0.3.0".
+	WorkerVersion string `protobuf:"bytes,2,opt,name=worker_version,json=workerVersion,proto3" json:"worker_version,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *JobStarted) Reset() {
-	*x = JobStarted{}
+func (x *RunStarted) Reset() {
+	*x = RunStarted{}
 	mi := &file_workers_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *JobStarted) String() string {
+func (x *RunStarted) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*JobStarted) ProtoMessage() {}
+func (*RunStarted) ProtoMessage() {}
 
-func (x *JobStarted) ProtoReflect() protoreflect.Message {
+func (x *RunStarted) ProtoReflect() protoreflect.Message {
 	mi := &file_workers_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -297,46 +525,57 @@ func (x *JobStarted) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use JobStarted.ProtoReflect.Descriptor instead.
-func (*JobStarted) Descriptor() ([]byte, []int) {
+// Deprecated: Use RunStarted.ProtoReflect.Descriptor instead.
+func (*RunStarted) Descriptor() ([]byte, []int) {
 	return file_workers_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *JobStarted) GetWorkerId() string {
+func (x *RunStarted) GetWorkerId() string {
 	if x != nil {
 		return x.WorkerId
 	}
 	return ""
 }
 
-// TrainingProgress is streamed periodically during model training.
-// For iterative models (e.g. XGBoost), this is sent after each
-// boosting round. For single-step models (e.g. linear regression),
-// a single progress message is sent.
-type TrainingProgress struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Epoch         int32                  `protobuf:"varint,1,opt,name=epoch,proto3" json:"epoch,omitempty"`                                                                                // Current training epoch/round (1-indexed)
-	TotalEpochs   int32                  `protobuf:"varint,2,opt,name=total_epochs,json=totalEpochs,proto3" json:"total_epochs,omitempty"`                                                 // Total expected epochs (0 if unknown)
-	Loss          float32                `protobuf:"fixed32,3,opt,name=loss,proto3" json:"loss,omitempty"`                                                                                 // Current loss value
-	Metrics       map[string]float32     `protobuf:"bytes,4,rep,name=metrics,proto3" json:"metrics,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"fixed32,2,opt,name=value"` // Additional metrics (e.g. "rmse", "r2")
+func (x *RunStarted) GetWorkerVersion() string {
+	if x != nil {
+		return x.WorkerVersion
+	}
+	return ""
+}
+
+// Progress reports where the run is. The worker sends one whenever the stage
+// changes, and during training after every epoch (iterative models) or once
+// (single-step models).
+type Progress struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Stage Stage                  `protobuf:"varint,1,opt,name=stage,proto3,enum=workers.Stage" json:"stage,omitempty"`
+	// Current epoch or boosting round, 1-indexed. 0 outside STAGE_TRAINING.
+	Epoch int32 `protobuf:"varint,2,opt,name=epoch,proto3" json:"epoch,omitempty"`
+	// Total expected epochs. 0 if unknown or not applicable.
+	TotalEpochs int32 `protobuf:"varint,3,opt,name=total_epochs,json=totalEpochs,proto3" json:"total_epochs,omitempty"`
+	// Training loss after this epoch. Absent when the model has no loss.
+	Loss *float64 `protobuf:"fixed64,4,opt,name=loss,proto3,oneof" json:"loss,omitempty"`
+	// Additional metrics for this epoch, e.g. "val_loss".
+	Metrics       map[string]float64 `protobuf:"bytes,5,rep,name=metrics,proto3" json:"metrics,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"fixed64,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *TrainingProgress) Reset() {
-	*x = TrainingProgress{}
+func (x *Progress) Reset() {
+	*x = Progress{}
 	mi := &file_workers_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *TrainingProgress) String() string {
+func (x *Progress) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*TrainingProgress) ProtoMessage() {}
+func (*Progress) ProtoMessage() {}
 
-func (x *TrainingProgress) ProtoReflect() protoreflect.Message {
+func (x *Progress) ProtoReflect() protoreflect.Message {
 	mi := &file_workers_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -348,65 +587,73 @@ func (x *TrainingProgress) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use TrainingProgress.ProtoReflect.Descriptor instead.
-func (*TrainingProgress) Descriptor() ([]byte, []int) {
+// Deprecated: Use Progress.ProtoReflect.Descriptor instead.
+func (*Progress) Descriptor() ([]byte, []int) {
 	return file_workers_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *TrainingProgress) GetEpoch() int32 {
+func (x *Progress) GetStage() Stage {
+	if x != nil {
+		return x.Stage
+	}
+	return Stage_STAGE_UNSPECIFIED
+}
+
+func (x *Progress) GetEpoch() int32 {
 	if x != nil {
 		return x.Epoch
 	}
 	return 0
 }
 
-func (x *TrainingProgress) GetTotalEpochs() int32 {
+func (x *Progress) GetTotalEpochs() int32 {
 	if x != nil {
 		return x.TotalEpochs
 	}
 	return 0
 }
 
-func (x *TrainingProgress) GetLoss() float32 {
-	if x != nil {
-		return x.Loss
+func (x *Progress) GetLoss() float64 {
+	if x != nil && x.Loss != nil {
+		return *x.Loss
 	}
 	return 0
 }
 
-func (x *TrainingProgress) GetMetrics() map[string]float32 {
+func (x *Progress) GetMetrics() map[string]float64 {
 	if x != nil {
 		return x.Metrics
 	}
 	return nil
 }
 
-// JobCompleted signals successful training. Contains the serialized
-// model and final evaluation metrics. Sent as the last WorkerUpdate
-// before the worker closes the stream.
-type JobCompleted struct {
-	state              protoimpl.MessageState `protogen:"open.v1"`
-	ModelArtifact      []byte                 `protobuf:"bytes,1,opt,name=model_artifact,json=modelArtifact,proto3" json:"model_artifact,omitempty"`                                            // Serialized model bytes
-	Metrics            map[string]float32     `protobuf:"bytes,2,rep,name=metrics,proto3" json:"metrics,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"fixed32,2,opt,name=value"` // Final evaluation metrics on test set
-	TrainingDurationMs int64                  `protobuf:"varint,3,opt,name=training_duration_ms,json=trainingDurationMs,proto3" json:"training_duration_ms,omitempty"`                          // Wall-clock training time in milliseconds
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+// LogLine is one line of the worker's log, shown in the run's log view.
+type LogLine struct {
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	Level   LogLevel               `protobuf:"varint,1,opt,name=level,proto3,enum=workers.LogLevel" json:"level,omitempty"`
+	Message string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	// When the line was written, in milliseconds since the Unix epoch.
+	TimeUnixMs int64 `protobuf:"varint,3,opt,name=time_unix_ms,json=timeUnixMs,proto3" json:"time_unix_ms,omitempty"`
+	// Name of the logger that wrote it, e.g. "reggie_worker.data".
+	Logger        string `protobuf:"bytes,4,opt,name=logger,proto3" json:"logger,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
-func (x *JobCompleted) Reset() {
-	*x = JobCompleted{}
+func (x *LogLine) Reset() {
+	*x = LogLine{}
 	mi := &file_workers_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *JobCompleted) String() string {
+func (x *LogLine) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*JobCompleted) ProtoMessage() {}
+func (*LogLine) ProtoMessage() {}
 
-func (x *JobCompleted) ProtoReflect() protoreflect.Message {
+func (x *LogLine) ProtoReflect() protoreflect.Message {
 	mi := &file_workers_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -418,58 +665,251 @@ func (x *JobCompleted) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use JobCompleted.ProtoReflect.Descriptor instead.
-func (*JobCompleted) Descriptor() ([]byte, []int) {
+// Deprecated: Use LogLine.ProtoReflect.Descriptor instead.
+func (*LogLine) Descriptor() ([]byte, []int) {
 	return file_workers_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *JobCompleted) GetModelArtifact() []byte {
+func (x *LogLine) GetLevel() LogLevel {
 	if x != nil {
-		return x.ModelArtifact
+		return x.Level
+	}
+	return LogLevel_LOG_LEVEL_UNSPECIFIED
+}
+
+func (x *LogLine) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *LogLine) GetTimeUnixMs() int64 {
+	if x != nil {
+		return x.TimeUnixMs
+	}
+	return 0
+}
+
+func (x *LogLine) GetLogger() string {
+	if x != nil {
+		return x.Logger
+	}
+	return ""
+}
+
+// Heartbeat tells conductor the worker is alive when it has nothing else to
+// send. It carries no data.
+type Heartbeat struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Heartbeat) Reset() {
+	*x = Heartbeat{}
+	mi := &file_workers_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Heartbeat) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Heartbeat) ProtoMessage() {}
+
+func (x *Heartbeat) ProtoReflect() protoreflect.Message {
+	mi := &file_workers_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Heartbeat.ProtoReflect.Descriptor instead.
+func (*Heartbeat) Descriptor() ([]byte, []int) {
+	return file_workers_proto_rawDescGZIP(), []int{6}
+}
+
+// ArtifactChunk carries part of the trained model. The worker splits the
+// serialized model into chunks of at most 1 MiB and sends them in order;
+// conductor concatenates them. RunCompleted describes the whole artifact.
+type ArtifactChunk struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Data          []byte                 `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ArtifactChunk) Reset() {
+	*x = ArtifactChunk{}
+	mi := &file_workers_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ArtifactChunk) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ArtifactChunk) ProtoMessage() {}
+
+func (x *ArtifactChunk) ProtoReflect() protoreflect.Message {
+	mi := &file_workers_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ArtifactChunk.ProtoReflect.Descriptor instead.
+func (*ArtifactChunk) Descriptor() ([]byte, []int) {
+	return file_workers_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ArtifactChunk) GetData() []byte {
+	if x != nil {
+		return x.Data
 	}
 	return nil
 }
 
-func (x *JobCompleted) GetMetrics() map[string]float32 {
+// RunCompleted is the final message of a successful run. It follows the
+// artifact's chunks.
+type RunCompleted struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	ArtifactFormat ArtifactFormat         `protobuf:"varint,1,opt,name=artifact_format,json=artifactFormat,proto3,enum=workers.ArtifactFormat" json:"artifact_format,omitempty"`
+	// Library that produced the model, e.g. "scikit-learn", and its version.
+	// Needed to load a pickle or a framework-specific format later.
+	Framework        string `protobuf:"bytes,2,opt,name=framework,proto3" json:"framework,omitempty"`
+	FrameworkVersion string `protobuf:"bytes,3,opt,name=framework_version,json=frameworkVersion,proto3" json:"framework_version,omitempty"`
+	// Size and SHA-256 (lowercase hex) of the concatenated chunks, so conductor
+	// can check it received the whole artifact.
+	ArtifactSizeBytes int64  `protobuf:"varint,4,opt,name=artifact_size_bytes,json=artifactSizeBytes,proto3" json:"artifact_size_bytes,omitempty"`
+	ArtifactSha256    string `protobuf:"bytes,5,opt,name=artifact_sha256,json=artifactSha256,proto3" json:"artifact_sha256,omitempty"`
+	// Final evaluation metrics on the held-out test set, e.g. "rmse", "r2".
+	Metrics map[string]float64 `protobuf:"bytes,6,rep,name=metrics,proto3" json:"metrics,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"fixed64,2,opt,name=value"`
+	// Wall-clock time from RunStarted to RunCompleted, in milliseconds.
+	TrainingDurationMs int64 `protobuf:"varint,7,opt,name=training_duration_ms,json=trainingDurationMs,proto3" json:"training_duration_ms,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *RunCompleted) Reset() {
+	*x = RunCompleted{}
+	mi := &file_workers_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RunCompleted) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RunCompleted) ProtoMessage() {}
+
+func (x *RunCompleted) ProtoReflect() protoreflect.Message {
+	mi := &file_workers_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RunCompleted.ProtoReflect.Descriptor instead.
+func (*RunCompleted) Descriptor() ([]byte, []int) {
+	return file_workers_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *RunCompleted) GetArtifactFormat() ArtifactFormat {
+	if x != nil {
+		return x.ArtifactFormat
+	}
+	return ArtifactFormat_ARTIFACT_FORMAT_UNSPECIFIED
+}
+
+func (x *RunCompleted) GetFramework() string {
+	if x != nil {
+		return x.Framework
+	}
+	return ""
+}
+
+func (x *RunCompleted) GetFrameworkVersion() string {
+	if x != nil {
+		return x.FrameworkVersion
+	}
+	return ""
+}
+
+func (x *RunCompleted) GetArtifactSizeBytes() int64 {
+	if x != nil {
+		return x.ArtifactSizeBytes
+	}
+	return 0
+}
+
+func (x *RunCompleted) GetArtifactSha256() string {
+	if x != nil {
+		return x.ArtifactSha256
+	}
+	return ""
+}
+
+func (x *RunCompleted) GetMetrics() map[string]float64 {
 	if x != nil {
 		return x.Metrics
 	}
 	return nil
 }
 
-func (x *JobCompleted) GetTrainingDurationMs() int64 {
+func (x *RunCompleted) GetTrainingDurationMs() int64 {
 	if x != nil {
 		return x.TrainingDurationMs
 	}
 	return 0
 }
 
-// JobFailed signals that training could not be completed. This may be
-// due to data errors, DB connectivity issues, invalid configuration,
-// cancellation, or unexpected exceptions.
-type JobFailed struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ErrorMessage  string                 `protobuf:"bytes,1,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"` // Human-readable error description
-	Traceback     string                 `protobuf:"bytes,2,opt,name=traceback,proto3" json:"traceback,omitempty"`                           // Traceback for debugging
+// RunFailed is the final message of a run that could not finish: bad data,
+// an unreachable database, invalid configuration or an unexpected error.
+type RunFailed struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Human-readable description, shown to the user.
+	ErrorMessage string `protobuf:"bytes,1,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
+	// Traceback or other detail for debugging.
+	Traceback     string `protobuf:"bytes,2,opt,name=traceback,proto3" json:"traceback,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *JobFailed) Reset() {
-	*x = JobFailed{}
-	mi := &file_workers_proto_msgTypes[6]
+func (x *RunFailed) Reset() {
+	*x = RunFailed{}
+	mi := &file_workers_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *JobFailed) String() string {
+func (x *RunFailed) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*JobFailed) ProtoMessage() {}
+func (*RunFailed) ProtoMessage() {}
 
-func (x *JobFailed) ProtoReflect() protoreflect.Message {
-	mi := &file_workers_proto_msgTypes[6]
+func (x *RunFailed) ProtoReflect() protoreflect.Message {
+	mi := &file_workers_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -480,21 +920,67 @@ func (x *JobFailed) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use JobFailed.ProtoReflect.Descriptor instead.
-func (*JobFailed) Descriptor() ([]byte, []int) {
-	return file_workers_proto_rawDescGZIP(), []int{6}
+// Deprecated: Use RunFailed.ProtoReflect.Descriptor instead.
+func (*RunFailed) Descriptor() ([]byte, []int) {
+	return file_workers_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *JobFailed) GetErrorMessage() string {
+func (x *RunFailed) GetErrorMessage() string {
 	if x != nil {
 		return x.ErrorMessage
 	}
 	return ""
 }
 
-func (x *JobFailed) GetTraceback() string {
+func (x *RunFailed) GetTraceback() string {
 	if x != nil {
 		return x.Traceback
+	}
+	return ""
+}
+
+// RunCancelled is the final message of a run stopped by CancelRun.
+type RunCancelled struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The reason from CancelRun, or what the worker was doing when it stopped.
+	Reason        string `protobuf:"bytes,1,opt,name=reason,proto3" json:"reason,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RunCancelled) Reset() {
+	*x = RunCancelled{}
+	mi := &file_workers_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RunCancelled) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RunCancelled) ProtoMessage() {}
+
+func (x *RunCancelled) ProtoReflect() protoreflect.Message {
+	mi := &file_workers_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RunCancelled.ProtoReflect.Descriptor instead.
+func (*RunCancelled) Descriptor() ([]byte, []int) {
+	return file_workers_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *RunCancelled) GetReason() string {
+	if x != nil {
+		return x.Reason
 	}
 	return ""
 }
@@ -503,43 +989,81 @@ var File_workers_proto protoreflect.FileDescriptor
 
 const file_workers_proto_rawDesc = "" +
 	"\n" +
-	"\rworkers.proto\x12\aworkers\"\xff\x01\n" +
-	"\fWorkerUpdate\x12\x15\n" +
-	"\x06job_id\x18\x01 \x01(\tR\x05jobId\x12/\n" +
-	"\astarted\x18\x02 \x01(\v2\x13.workers.JobStartedH\x00R\astarted\x127\n" +
-	"\bprogress\x18\x03 \x01(\v2\x19.workers.TrainingProgressH\x00R\bprogress\x125\n" +
-	"\tcompleted\x18\x04 \x01(\v2\x15.workers.JobCompletedH\x00R\tcompleted\x12,\n" +
-	"\x06failed\x18\x05 \x01(\v2\x12.workers.JobFailedH\x00R\x06failedB\t\n" +
-	"\apayload\"E\n" +
-	"\n" +
-	"JobCommand\x12,\n" +
-	"\x06cancel\x18\x01 \x01(\v2\x12.workers.CancelJobH\x00R\x06cancelB\t\n" +
+	"\rworkers.proto\x12\aworkers\"\xca\x03\n" +
+	"\rWorkerMessage\x12\x15\n" +
+	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12/\n" +
+	"\astarted\x18\x02 \x01(\v2\x13.workers.RunStartedH\x00R\astarted\x12/\n" +
+	"\bprogress\x18\x03 \x01(\v2\x11.workers.ProgressH\x00R\bprogress\x12$\n" +
+	"\x03log\x18\x04 \x01(\v2\x10.workers.LogLineH\x00R\x03log\x122\n" +
+	"\theartbeat\x18\x05 \x01(\v2\x12.workers.HeartbeatH\x00R\theartbeat\x12?\n" +
+	"\x0eartifact_chunk\x18\x06 \x01(\v2\x16.workers.ArtifactChunkH\x00R\rartifactChunk\x125\n" +
+	"\tcompleted\x18\a \x01(\v2\x15.workers.RunCompletedH\x00R\tcompleted\x12,\n" +
+	"\x06failed\x18\b \x01(\v2\x12.workers.RunFailedH\x00R\x06failed\x125\n" +
+	"\tcancelled\x18\t \x01(\v2\x15.workers.RunCancelledH\x00R\tcancelledB\t\n" +
+	"\apayload\"K\n" +
+	"\x10ConductorMessage\x12,\n" +
+	"\x06cancel\x18\x01 \x01(\v2\x12.workers.CancelRunH\x00R\x06cancelB\t\n" +
 	"\acommand\"#\n" +
-	"\tCancelJob\x12\x16\n" +
-	"\x06reason\x18\x01 \x01(\tR\x06reason\")\n" +
+	"\tCancelRun\x12\x16\n" +
+	"\x06reason\x18\x01 \x01(\tR\x06reason\"P\n" +
 	"\n" +
-	"JobStarted\x12\x1b\n" +
-	"\tworker_id\x18\x01 \x01(\tR\bworkerId\"\xdd\x01\n" +
-	"\x10TrainingProgress\x12\x14\n" +
-	"\x05epoch\x18\x01 \x01(\x05R\x05epoch\x12!\n" +
-	"\ftotal_epochs\x18\x02 \x01(\x05R\vtotalEpochs\x12\x12\n" +
-	"\x04loss\x18\x03 \x01(\x02R\x04loss\x12@\n" +
-	"\ametrics\x18\x04 \x03(\v2&.workers.TrainingProgress.MetricsEntryR\ametrics\x1a:\n" +
+	"RunStarted\x12\x1b\n" +
+	"\tworker_id\x18\x01 \x01(\tR\bworkerId\x12%\n" +
+	"\x0eworker_version\x18\x02 \x01(\tR\rworkerVersion\"\x81\x02\n" +
+	"\bProgress\x12$\n" +
+	"\x05stage\x18\x01 \x01(\x0e2\x0e.workers.StageR\x05stage\x12\x14\n" +
+	"\x05epoch\x18\x02 \x01(\x05R\x05epoch\x12!\n" +
+	"\ftotal_epochs\x18\x03 \x01(\x05R\vtotalEpochs\x12\x17\n" +
+	"\x04loss\x18\x04 \x01(\x01H\x00R\x04loss\x88\x01\x01\x128\n" +
+	"\ametrics\x18\x05 \x03(\v2\x1e.workers.Progress.MetricsEntryR\ametrics\x1a:\n" +
 	"\fMetricsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x02R\x05value:\x028\x01\"\xe1\x01\n" +
-	"\fJobCompleted\x12%\n" +
-	"\x0emodel_artifact\x18\x01 \x01(\fR\rmodelArtifact\x12<\n" +
-	"\ametrics\x18\x02 \x03(\v2\".workers.JobCompleted.MetricsEntryR\ametrics\x120\n" +
-	"\x14training_duration_ms\x18\x03 \x01(\x03R\x12trainingDurationMs\x1a:\n" +
+	"\x05value\x18\x02 \x01(\x01R\x05value:\x028\x01B\a\n" +
+	"\x05_loss\"\x86\x01\n" +
+	"\aLogLine\x12'\n" +
+	"\x05level\x18\x01 \x01(\x0e2\x11.workers.LogLevelR\x05level\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12 \n" +
+	"\ftime_unix_ms\x18\x03 \x01(\x03R\n" +
+	"timeUnixMs\x12\x16\n" +
+	"\x06logger\x18\x04 \x01(\tR\x06logger\"\v\n" +
+	"\tHeartbeat\"#\n" +
+	"\rArtifactChunk\x12\x12\n" +
+	"\x04data\x18\x01 \x01(\fR\x04data\"\xa0\x03\n" +
+	"\fRunCompleted\x12@\n" +
+	"\x0fartifact_format\x18\x01 \x01(\x0e2\x17.workers.ArtifactFormatR\x0eartifactFormat\x12\x1c\n" +
+	"\tframework\x18\x02 \x01(\tR\tframework\x12+\n" +
+	"\x11framework_version\x18\x03 \x01(\tR\x10frameworkVersion\x12.\n" +
+	"\x13artifact_size_bytes\x18\x04 \x01(\x03R\x11artifactSizeBytes\x12'\n" +
+	"\x0fartifact_sha256\x18\x05 \x01(\tR\x0eartifactSha256\x12<\n" +
+	"\ametrics\x18\x06 \x03(\v2\".workers.RunCompleted.MetricsEntryR\ametrics\x120\n" +
+	"\x14training_duration_ms\x18\a \x01(\x03R\x12trainingDurationMs\x1a:\n" +
 	"\fMetricsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x02R\x05value:\x028\x01\"N\n" +
-	"\tJobFailed\x12#\n" +
+	"\x05value\x18\x02 \x01(\x01R\x05value:\x028\x01\"N\n" +
+	"\tRunFailed\x12#\n" +
 	"\rerror_message\x18\x01 \x01(\tR\ferrorMessage\x12\x1c\n" +
-	"\ttraceback\x18\x02 \x01(\tR\ttraceback2N\n" +
-	"\rWorkerService\x12=\n" +
-	"\vRunTraining\x12\x15.workers.WorkerUpdate\x1a\x13.workers.JobCommand(\x010\x01B#Z!github.com/reggie-ml/proto/gen/gob\x06proto3"
+	"\ttraceback\x18\x02 \x01(\tR\ttraceback\"&\n" +
+	"\fRunCancelled\x12\x16\n" +
+	"\x06reason\x18\x01 \x01(\tR\x06reason*\x8b\x01\n" +
+	"\x05Stage\x12\x15\n" +
+	"\x11STAGE_UNSPECIFIED\x10\x00\x12\x16\n" +
+	"\x12STAGE_LOADING_DATA\x10\x01\x12\x17\n" +
+	"\x13STAGE_PREPROCESSING\x10\x02\x12\x12\n" +
+	"\x0eSTAGE_TRAINING\x10\x03\x12\x14\n" +
+	"\x10STAGE_EVALUATING\x10\x04\x12\x10\n" +
+	"\fSTAGE_SAVING\x10\x05*z\n" +
+	"\bLogLevel\x12\x19\n" +
+	"\x15LOG_LEVEL_UNSPECIFIED\x10\x00\x12\x13\n" +
+	"\x0fLOG_LEVEL_DEBUG\x10\x01\x12\x12\n" +
+	"\x0eLOG_LEVEL_INFO\x10\x02\x12\x15\n" +
+	"\x11LOG_LEVEL_WARNING\x10\x03\x12\x13\n" +
+	"\x0fLOG_LEVEL_ERROR\x10\x04*h\n" +
+	"\x0eArtifactFormat\x12\x1f\n" +
+	"\x1bARTIFACT_FORMAT_UNSPECIFIED\x10\x00\x12\x1a\n" +
+	"\x16ARTIFACT_FORMAT_PICKLE\x10\x01\x12\x19\n" +
+	"\x15ARTIFACT_FORMAT_KERAS\x10\x022U\n" +
+	"\rWorkerService\x12D\n" +
+	"\vRunTraining\x12\x16.workers.WorkerMessage\x1a\x19.workers.ConductorMessage(\x010\x01B#Z!github.com/reggie-ml/proto/gen/gob\x06proto3"
 
 var (
 	file_workers_proto_rawDescOnce sync.Once
@@ -553,33 +1077,48 @@ func file_workers_proto_rawDescGZIP() []byte {
 	return file_workers_proto_rawDescData
 }
 
-var file_workers_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_workers_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_workers_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_workers_proto_goTypes = []any{
-	(*WorkerUpdate)(nil),     // 0: workers.WorkerUpdate
-	(*JobCommand)(nil),       // 1: workers.JobCommand
-	(*CancelJob)(nil),        // 2: workers.CancelJob
-	(*JobStarted)(nil),       // 3: workers.JobStarted
-	(*TrainingProgress)(nil), // 4: workers.TrainingProgress
-	(*JobCompleted)(nil),     // 5: workers.JobCompleted
-	(*JobFailed)(nil),        // 6: workers.JobFailed
-	nil,                      // 7: workers.TrainingProgress.MetricsEntry
-	nil,                      // 8: workers.JobCompleted.MetricsEntry
+	(Stage)(0),               // 0: workers.Stage
+	(LogLevel)(0),            // 1: workers.LogLevel
+	(ArtifactFormat)(0),      // 2: workers.ArtifactFormat
+	(*WorkerMessage)(nil),    // 3: workers.WorkerMessage
+	(*ConductorMessage)(nil), // 4: workers.ConductorMessage
+	(*CancelRun)(nil),        // 5: workers.CancelRun
+	(*RunStarted)(nil),       // 6: workers.RunStarted
+	(*Progress)(nil),         // 7: workers.Progress
+	(*LogLine)(nil),          // 8: workers.LogLine
+	(*Heartbeat)(nil),        // 9: workers.Heartbeat
+	(*ArtifactChunk)(nil),    // 10: workers.ArtifactChunk
+	(*RunCompleted)(nil),     // 11: workers.RunCompleted
+	(*RunFailed)(nil),        // 12: workers.RunFailed
+	(*RunCancelled)(nil),     // 13: workers.RunCancelled
+	nil,                      // 14: workers.Progress.MetricsEntry
+	nil,                      // 15: workers.RunCompleted.MetricsEntry
 }
 var file_workers_proto_depIdxs = []int32{
-	3, // 0: workers.WorkerUpdate.started:type_name -> workers.JobStarted
-	4, // 1: workers.WorkerUpdate.progress:type_name -> workers.TrainingProgress
-	5, // 2: workers.WorkerUpdate.completed:type_name -> workers.JobCompleted
-	6, // 3: workers.WorkerUpdate.failed:type_name -> workers.JobFailed
-	2, // 4: workers.JobCommand.cancel:type_name -> workers.CancelJob
-	7, // 5: workers.TrainingProgress.metrics:type_name -> workers.TrainingProgress.MetricsEntry
-	8, // 6: workers.JobCompleted.metrics:type_name -> workers.JobCompleted.MetricsEntry
-	0, // 7: workers.WorkerService.RunTraining:input_type -> workers.WorkerUpdate
-	1, // 8: workers.WorkerService.RunTraining:output_type -> workers.JobCommand
-	8, // [8:9] is the sub-list for method output_type
-	7, // [7:8] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	6,  // 0: workers.WorkerMessage.started:type_name -> workers.RunStarted
+	7,  // 1: workers.WorkerMessage.progress:type_name -> workers.Progress
+	8,  // 2: workers.WorkerMessage.log:type_name -> workers.LogLine
+	9,  // 3: workers.WorkerMessage.heartbeat:type_name -> workers.Heartbeat
+	10, // 4: workers.WorkerMessage.artifact_chunk:type_name -> workers.ArtifactChunk
+	11, // 5: workers.WorkerMessage.completed:type_name -> workers.RunCompleted
+	12, // 6: workers.WorkerMessage.failed:type_name -> workers.RunFailed
+	13, // 7: workers.WorkerMessage.cancelled:type_name -> workers.RunCancelled
+	5,  // 8: workers.ConductorMessage.cancel:type_name -> workers.CancelRun
+	0,  // 9: workers.Progress.stage:type_name -> workers.Stage
+	14, // 10: workers.Progress.metrics:type_name -> workers.Progress.MetricsEntry
+	1,  // 11: workers.LogLine.level:type_name -> workers.LogLevel
+	2,  // 12: workers.RunCompleted.artifact_format:type_name -> workers.ArtifactFormat
+	15, // 13: workers.RunCompleted.metrics:type_name -> workers.RunCompleted.MetricsEntry
+	3,  // 14: workers.WorkerService.RunTraining:input_type -> workers.WorkerMessage
+	4,  // 15: workers.WorkerService.RunTraining:output_type -> workers.ConductorMessage
+	15, // [15:16] is the sub-list for method output_type
+	14, // [14:15] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_workers_proto_init() }
@@ -588,26 +1127,32 @@ func file_workers_proto_init() {
 		return
 	}
 	file_workers_proto_msgTypes[0].OneofWrappers = []any{
-		(*WorkerUpdate_Started)(nil),
-		(*WorkerUpdate_Progress)(nil),
-		(*WorkerUpdate_Completed)(nil),
-		(*WorkerUpdate_Failed)(nil),
+		(*WorkerMessage_Started)(nil),
+		(*WorkerMessage_Progress)(nil),
+		(*WorkerMessage_Log)(nil),
+		(*WorkerMessage_Heartbeat)(nil),
+		(*WorkerMessage_ArtifactChunk)(nil),
+		(*WorkerMessage_Completed)(nil),
+		(*WorkerMessage_Failed)(nil),
+		(*WorkerMessage_Cancelled)(nil),
 	}
 	file_workers_proto_msgTypes[1].OneofWrappers = []any{
-		(*JobCommand_Cancel)(nil),
+		(*ConductorMessage_Cancel)(nil),
 	}
+	file_workers_proto_msgTypes[4].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_workers_proto_rawDesc), len(file_workers_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   9,
+			NumEnums:      3,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_workers_proto_goTypes,
 		DependencyIndexes: file_workers_proto_depIdxs,
+		EnumInfos:         file_workers_proto_enumTypes,
 		MessageInfos:      file_workers_proto_msgTypes,
 	}.Build()
 	File_workers_proto = out.File

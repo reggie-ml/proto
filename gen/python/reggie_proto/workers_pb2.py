@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rworkers.proto\x12\x07workers\"\xff\x01\n\x0cWorkerUpdate\x12\x15\n\x06job_id\x18\x01 \x01(\tR\x05jobId\x12/\n\x07started\x18\x02 \x01(\x0b\x32\x13.workers.JobStartedH\x00R\x07started\x12\x37\n\x08progress\x18\x03 \x01(\x0b\x32\x19.workers.TrainingProgressH\x00R\x08progress\x12\x35\n\tcompleted\x18\x04 \x01(\x0b\x32\x15.workers.JobCompletedH\x00R\tcompleted\x12,\n\x06\x66\x61iled\x18\x05 \x01(\x0b\x32\x12.workers.JobFailedH\x00R\x06\x66\x61iledB\t\n\x07payload\"E\n\nJobCommand\x12,\n\x06\x63\x61ncel\x18\x01 \x01(\x0b\x32\x12.workers.CancelJobH\x00R\x06\x63\x61ncelB\t\n\x07\x63ommand\"#\n\tCancelJob\x12\x16\n\x06reason\x18\x01 \x01(\tR\x06reason\")\n\nJobStarted\x12\x1b\n\tworker_id\x18\x01 \x01(\tR\x08workerId\"\xdd\x01\n\x10TrainingProgress\x12\x14\n\x05\x65poch\x18\x01 \x01(\x05R\x05\x65poch\x12!\n\x0ctotal_epochs\x18\x02 \x01(\x05R\x0btotalEpochs\x12\x12\n\x04loss\x18\x03 \x01(\x02R\x04loss\x12@\n\x07metrics\x18\x04 \x03(\x0b\x32&.workers.TrainingProgress.MetricsEntryR\x07metrics\x1a:\n\x0cMetricsEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n\x05value\x18\x02 \x01(\x02R\x05value:\x02\x38\x01\"\xe1\x01\n\x0cJobCompleted\x12%\n\x0emodel_artifact\x18\x01 \x01(\x0cR\rmodelArtifact\x12<\n\x07metrics\x18\x02 \x03(\x0b\x32\".workers.JobCompleted.MetricsEntryR\x07metrics\x12\x30\n\x14training_duration_ms\x18\x03 \x01(\x03R\x12trainingDurationMs\x1a:\n\x0cMetricsEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n\x05value\x18\x02 \x01(\x02R\x05value:\x02\x38\x01\"N\n\tJobFailed\x12#\n\rerror_message\x18\x01 \x01(\tR\x0c\x65rrorMessage\x12\x1c\n\ttraceback\x18\x02 \x01(\tR\ttraceback2N\n\rWorkerService\x12=\n\x0bRunTraining\x12\x15.workers.WorkerUpdate\x1a\x13.workers.JobCommand(\x01\x30\x01\x42#Z!github.com/reggie-ml/proto/gen/gob\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rworkers.proto\x12\x07workers\"\xca\x03\n\rWorkerMessage\x12\x15\n\x06run_id\x18\x01 \x01(\tR\x05runId\x12/\n\x07started\x18\x02 \x01(\x0b\x32\x13.workers.RunStartedH\x00R\x07started\x12/\n\x08progress\x18\x03 \x01(\x0b\x32\x11.workers.ProgressH\x00R\x08progress\x12$\n\x03log\x18\x04 \x01(\x0b\x32\x10.workers.LogLineH\x00R\x03log\x12\x32\n\theartbeat\x18\x05 \x01(\x0b\x32\x12.workers.HeartbeatH\x00R\theartbeat\x12?\n\x0e\x61rtifact_chunk\x18\x06 \x01(\x0b\x32\x16.workers.ArtifactChunkH\x00R\rartifactChunk\x12\x35\n\tcompleted\x18\x07 \x01(\x0b\x32\x15.workers.RunCompletedH\x00R\tcompleted\x12,\n\x06\x66\x61iled\x18\x08 \x01(\x0b\x32\x12.workers.RunFailedH\x00R\x06\x66\x61iled\x12\x35\n\tcancelled\x18\t \x01(\x0b\x32\x15.workers.RunCancelledH\x00R\tcancelledB\t\n\x07payload\"K\n\x10\x43onductorMessage\x12,\n\x06\x63\x61ncel\x18\x01 \x01(\x0b\x32\x12.workers.CancelRunH\x00R\x06\x63\x61ncelB\t\n\x07\x63ommand\"#\n\tCancelRun\x12\x16\n\x06reason\x18\x01 \x01(\tR\x06reason\"P\n\nRunStarted\x12\x1b\n\tworker_id\x18\x01 \x01(\tR\x08workerId\x12%\n\x0eworker_version\x18\x02 \x01(\tR\rworkerVersion\"\x81\x02\n\x08Progress\x12$\n\x05stage\x18\x01 \x01(\x0e\x32\x0e.workers.StageR\x05stage\x12\x14\n\x05\x65poch\x18\x02 \x01(\x05R\x05\x65poch\x12!\n\x0ctotal_epochs\x18\x03 \x01(\x05R\x0btotalEpochs\x12\x17\n\x04loss\x18\x04 \x01(\x01H\x00R\x04loss\x88\x01\x01\x12\x38\n\x07metrics\x18\x05 \x03(\x0b\x32\x1e.workers.Progress.MetricsEntryR\x07metrics\x1a:\n\x0cMetricsEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n\x05value\x18\x02 \x01(\x01R\x05value:\x02\x38\x01\x42\x07\n\x05_loss\"\x86\x01\n\x07LogLine\x12\'\n\x05level\x18\x01 \x01(\x0e\x32\x11.workers.LogLevelR\x05level\x12\x18\n\x07message\x18\x02 \x01(\tR\x07message\x12 \n\x0ctime_unix_ms\x18\x03 \x01(\x03R\ntimeUnixMs\x12\x16\n\x06logger\x18\x04 \x01(\tR\x06logger\"\x0b\n\tHeartbeat\"#\n\rArtifactChunk\x12\x12\n\x04\x64\x61ta\x18\x01 \x01(\x0cR\x04\x64\x61ta\"\xa0\x03\n\x0cRunCompleted\x12@\n\x0f\x61rtifact_format\x18\x01 \x01(\x0e\x32\x17.workers.ArtifactFormatR\x0e\x61rtifactFormat\x12\x1c\n\tframework\x18\x02 \x01(\tR\tframework\x12+\n\x11\x66ramework_version\x18\x03 \x01(\tR\x10\x66rameworkVersion\x12.\n\x13\x61rtifact_size_bytes\x18\x04 \x01(\x03R\x11\x61rtifactSizeBytes\x12\'\n\x0f\x61rtifact_sha256\x18\x05 \x01(\tR\x0e\x61rtifactSha256\x12<\n\x07metrics\x18\x06 \x03(\x0b\x32\".workers.RunCompleted.MetricsEntryR\x07metrics\x12\x30\n\x14training_duration_ms\x18\x07 \x01(\x03R\x12trainingDurationMs\x1a:\n\x0cMetricsEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n\x05value\x18\x02 \x01(\x01R\x05value:\x02\x38\x01\"N\n\tRunFailed\x12#\n\rerror_message\x18\x01 \x01(\tR\x0c\x65rrorMessage\x12\x1c\n\ttraceback\x18\x02 \x01(\tR\ttraceback\"&\n\x0cRunCancelled\x12\x16\n\x06reason\x18\x01 \x01(\tR\x06reason*\x8b\x01\n\x05Stage\x12\x15\n\x11STAGE_UNSPECIFIED\x10\x00\x12\x16\n\x12STAGE_LOADING_DATA\x10\x01\x12\x17\n\x13STAGE_PREPROCESSING\x10\x02\x12\x12\n\x0eSTAGE_TRAINING\x10\x03\x12\x14\n\x10STAGE_EVALUATING\x10\x04\x12\x10\n\x0cSTAGE_SAVING\x10\x05*z\n\x08LogLevel\x12\x19\n\x15LOG_LEVEL_UNSPECIFIED\x10\x00\x12\x13\n\x0fLOG_LEVEL_DEBUG\x10\x01\x12\x12\n\x0eLOG_LEVEL_INFO\x10\x02\x12\x15\n\x11LOG_LEVEL_WARNING\x10\x03\x12\x13\n\x0fLOG_LEVEL_ERROR\x10\x04*h\n\x0e\x41rtifactFormat\x12\x1f\n\x1b\x41RTIFACT_FORMAT_UNSPECIFIED\x10\x00\x12\x1a\n\x16\x41RTIFACT_FORMAT_PICKLE\x10\x01\x12\x19\n\x15\x41RTIFACT_FORMAT_KERAS\x10\x02\x32U\n\rWorkerService\x12\x44\n\x0bRunTraining\x12\x16.workers.WorkerMessage\x1a\x19.workers.ConductorMessage(\x01\x30\x01\x42#Z!github.com/reggie-ml/proto/gen/gob\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,28 +32,42 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'workers_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'Z!github.com/reggie-ml/proto/gen/go'
-  _globals['_TRAININGPROGRESS_METRICSENTRY']._loaded_options = None
-  _globals['_TRAININGPROGRESS_METRICSENTRY']._serialized_options = b'8\001'
-  _globals['_JOBCOMPLETED_METRICSENTRY']._loaded_options = None
-  _globals['_JOBCOMPLETED_METRICSENTRY']._serialized_options = b'8\001'
-  _globals['_WORKERUPDATE']._serialized_start=27
-  _globals['_WORKERUPDATE']._serialized_end=282
-  _globals['_JOBCOMMAND']._serialized_start=284
-  _globals['_JOBCOMMAND']._serialized_end=353
-  _globals['_CANCELJOB']._serialized_start=355
-  _globals['_CANCELJOB']._serialized_end=390
-  _globals['_JOBSTARTED']._serialized_start=392
-  _globals['_JOBSTARTED']._serialized_end=433
-  _globals['_TRAININGPROGRESS']._serialized_start=436
-  _globals['_TRAININGPROGRESS']._serialized_end=657
-  _globals['_TRAININGPROGRESS_METRICSENTRY']._serialized_start=599
-  _globals['_TRAININGPROGRESS_METRICSENTRY']._serialized_end=657
-  _globals['_JOBCOMPLETED']._serialized_start=660
-  _globals['_JOBCOMPLETED']._serialized_end=885
-  _globals['_JOBCOMPLETED_METRICSENTRY']._serialized_start=599
-  _globals['_JOBCOMPLETED_METRICSENTRY']._serialized_end=657
-  _globals['_JOBFAILED']._serialized_start=887
-  _globals['_JOBFAILED']._serialized_end=965
-  _globals['_WORKERSERVICE']._serialized_start=967
-  _globals['_WORKERSERVICE']._serialized_end=1045
+  _globals['_PROGRESS_METRICSENTRY']._loaded_options = None
+  _globals['_PROGRESS_METRICSENTRY']._serialized_options = b'8\001'
+  _globals['_RUNCOMPLETED_METRICSENTRY']._loaded_options = None
+  _globals['_RUNCOMPLETED_METRICSENTRY']._serialized_options = b'8\001'
+  _globals['_STAGE']._serialized_start=1670
+  _globals['_STAGE']._serialized_end=1809
+  _globals['_LOGLEVEL']._serialized_start=1811
+  _globals['_LOGLEVEL']._serialized_end=1933
+  _globals['_ARTIFACTFORMAT']._serialized_start=1935
+  _globals['_ARTIFACTFORMAT']._serialized_end=2039
+  _globals['_WORKERMESSAGE']._serialized_start=27
+  _globals['_WORKERMESSAGE']._serialized_end=485
+  _globals['_CONDUCTORMESSAGE']._serialized_start=487
+  _globals['_CONDUCTORMESSAGE']._serialized_end=562
+  _globals['_CANCELRUN']._serialized_start=564
+  _globals['_CANCELRUN']._serialized_end=599
+  _globals['_RUNSTARTED']._serialized_start=601
+  _globals['_RUNSTARTED']._serialized_end=681
+  _globals['_PROGRESS']._serialized_start=684
+  _globals['_PROGRESS']._serialized_end=941
+  _globals['_PROGRESS_METRICSENTRY']._serialized_start=874
+  _globals['_PROGRESS_METRICSENTRY']._serialized_end=932
+  _globals['_LOGLINE']._serialized_start=944
+  _globals['_LOGLINE']._serialized_end=1078
+  _globals['_HEARTBEAT']._serialized_start=1080
+  _globals['_HEARTBEAT']._serialized_end=1091
+  _globals['_ARTIFACTCHUNK']._serialized_start=1093
+  _globals['_ARTIFACTCHUNK']._serialized_end=1128
+  _globals['_RUNCOMPLETED']._serialized_start=1131
+  _globals['_RUNCOMPLETED']._serialized_end=1547
+  _globals['_RUNCOMPLETED_METRICSENTRY']._serialized_start=874
+  _globals['_RUNCOMPLETED_METRICSENTRY']._serialized_end=932
+  _globals['_RUNFAILED']._serialized_start=1549
+  _globals['_RUNFAILED']._serialized_end=1627
+  _globals['_RUNCANCELLED']._serialized_start=1629
+  _globals['_RUNCANCELLED']._serialized_end=1667
+  _globals['_WORKERSERVICE']._serialized_start=2041
+  _globals['_WORKERSERVICE']._serialized_end=2126
 # @@protoc_insertion_point(module_scope)

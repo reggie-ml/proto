@@ -6,8 +6,9 @@ from reggie_proto import workers_pb2 as workers__pb2
 
 
 class WorkerServiceStub(object):
-    """WorkerService defines the communication contract between the API
-    (server) and worker processes (clients).
+    """WorkerService is the contract between conductor (the gRPC server) and a
+    training worker (the client). A worker trains exactly one run and opens
+    exactly one RunTraining stream for it.
     """
 
     def __init__(self, channel):
@@ -18,22 +19,37 @@ class WorkerServiceStub(object):
         """
         self.RunTraining = channel.stream_stream(
                 '/workers.WorkerService/RunTraining',
-                request_serializer=workers__pb2.WorkerUpdate.SerializeToString,
-                response_deserializer=workers__pb2.JobCommand.FromString,
+                request_serializer=workers__pb2.WorkerMessage.SerializeToString,
+                response_deserializer=workers__pb2.ConductorMessage.FromString,
                 _registered_method=True)
 
 
 class WorkerServiceServicer(object):
-    """WorkerService defines the communication contract between the API
-    (server) and worker processes (clients).
+    """WorkerService is the contract between conductor (the gRPC server) and a
+    training worker (the client). A worker trains exactly one run and opens
+    exactly one RunTraining stream for it.
     """
 
     def RunTraining(self, request_iterator, context):
-        """RunTraining establishes a bidirectional stream for a single training job.
-        The worker (client) streams WorkerUpdate messages to report lifecycle
-        events and progress. The server streams JobCommand messages to control
-        the worker (e.g. cancellation). The stream remains open for the
-        duration of the training job.
+        """RunTraining carries one training run from start to finish.
+
+        Worker → conductor, in this order:
+        1. RunStarted, as the first message.
+        2. Any number of Progress, LogLine and Heartbeat messages. While the
+        stream is open the worker sends some message at least every 10
+        seconds, sending a Heartbeat when it has nothing else to say.
+        Conductor treats 30 seconds of silence as a lost worker and fails
+        the run.
+        3. On success: the trained model as one or more ArtifactChunk
+        messages, then RunCompleted.
+        4. Exactly one final message: RunCompleted, RunFailed or RunCancelled.
+        The worker then closes its side of the stream.
+
+        Conductor → worker: CancelRun, at any time. The worker stops at the next
+        safe point and ends with RunCancelled.
+
+        Every WorkerMessage carries the run_id. A stream that ends without a final
+        message is treated as a failed run.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -44,8 +60,8 @@ def add_WorkerServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'RunTraining': grpc.stream_stream_rpc_method_handler(
                     servicer.RunTraining,
-                    request_deserializer=workers__pb2.WorkerUpdate.FromString,
-                    response_serializer=workers__pb2.JobCommand.SerializeToString,
+                    request_deserializer=workers__pb2.WorkerMessage.FromString,
+                    response_serializer=workers__pb2.ConductorMessage.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -56,8 +72,9 @@ def add_WorkerServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class WorkerService(object):
-    """WorkerService defines the communication contract between the API
-    (server) and worker processes (clients).
+    """WorkerService is the contract between conductor (the gRPC server) and a
+    training worker (the client). A worker trains exactly one run and opens
+    exactly one RunTraining stream for it.
     """
 
     @staticmethod
@@ -75,8 +92,8 @@ class WorkerService(object):
             request_iterator,
             target,
             '/workers.WorkerService/RunTraining',
-            workers__pb2.WorkerUpdate.SerializeToString,
-            workers__pb2.JobCommand.FromString,
+            workers__pb2.WorkerMessage.SerializeToString,
+            workers__pb2.ConductorMessage.FromString,
             options,
             channel_credentials,
             insecure,
