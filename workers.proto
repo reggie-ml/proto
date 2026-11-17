@@ -1,79 +1,166 @@
 syntax = "proto3";
+
 package workers;
 
 option go_package = "github.com/reggie-ml/proto/gen/go";
 
-// WorkerService defines the communication contract between the API
-// (server) and worker processes (clients).
+// WorkerService is the contract between conductor (the gRPC server) and a
+// training worker (the client). A worker trains exactly one run and opens
+// exactly one RunTraining stream for it.
 service WorkerService {
-  // RunTraining establishes a bidirectional stream for a single training job.
-  // The worker (client) streams WorkerUpdate messages to report lifecycle
-  // events and progress. The server streams JobCommand messages to control
-  // the worker (e.g. cancellation). The stream remains open for the
-  // duration of the training job.
-  rpc RunTraining(stream WorkerUpdate) returns (stream JobCommand);
+  // RunTraining carries one training run from start to finish.
+  //
+  // Worker → conductor, in this order:
+  //   1. RunStarted, as the first message.
+  //   2. Any number of Progress, LogLine and Heartbeat messages. While the
+  //      stream is open the worker sends some message at least every 10
+  //      seconds, sending a Heartbeat when it has nothing else to say.
+  //      Conductor treats 30 seconds of silence as a lost worker and fails
+  //      the run.
+  //   3. On success: the trained model as one or more ArtifactChunk
+  //      messages, then RunCompleted.
+  //   4. Exactly one final message: RunCompleted, RunFailed or RunCancelled.
+  //      The worker then closes its side of the stream.
+  //
+  // Conductor → worker: CancelRun, at any time. The worker stops at the next
+  // safe point and ends with RunCancelled.
+  //
+  // Every WorkerMessage carries the run_id. A stream that ends without a final
+  // message is treated as a failed run.
+  rpc RunTraining(stream WorkerMessage) returns (stream ConductorMessage);
 }
 
-// WorkerUpdate is sent by the worker to the API over the
-// RunTraining stream. Each message is tagged with the job_id and carries
-// exactly one lifecycle event as the payload.
-message WorkerUpdate {
-  string job_id = 1;
+// WorkerMessage is one message from the worker to conductor.
+message WorkerMessage {
+  // The run this stream belongs to. Identical on every message of a stream.
+  string run_id = 1;
+
   oneof payload {
-    JobStarted       started   = 2;
-    TrainingProgress progress  = 3;
-    JobCompleted     completed = 4;
-    JobFailed        failed    = 5;
+    RunStarted started = 2;
+    Progress progress = 3;
+    LogLine log = 4;
+    Heartbeat heartbeat = 5;
+    ArtifactChunk artifact_chunk = 6;
+    RunCompleted completed = 7;
+    RunFailed failed = 8;
+    RunCancelled cancelled = 9;
   }
 }
 
-// JobCommand is sent by the API to the worker over the
-// RunTraining stream. Used to control the worker during training.
-message JobCommand {
+// ConductorMessage is one message from conductor to the worker.
+message ConductorMessage {
   oneof command {
-    CancelJob cancel = 1;
+    CancelRun cancel = 1;
   }
 }
 
-// CancelJob instructs the worker to abort the current training job
-// gracefully. The worker should clean up resources and send a JobFailed
-// message before closing the stream.
-message CancelJob {
+// CancelRun asks the worker to stop. It answers with RunCancelled.
+message CancelRun {
   string reason = 1;
 }
 
-// JobStarted is the first message a worker sends after opening the
-// RunTraining stream, confirming it has initialized and is ready to train.
-message JobStarted {
-  // Unique identifier for this worker process, useful for logging
-  // and correlating with OS-level process management.
+// RunStarted is the first message of every stream.
+message RunStarted {
+  // Identifies the worker process, for logs and process management.
   string worker_id = 1;
+  // Version of the worker runtime, e.g. "0.3.0".
+  string worker_version = 2;
 }
 
-// TrainingProgress is streamed periodically during model training.
-// For iterative models (e.g. XGBoost), this is sent after each
-// boosting round. For single-step models (e.g. linear regression),
-// a single progress message is sent.
-message TrainingProgress {
-  int32              epoch        = 1; // Current training epoch/round (1-indexed)
-  int32              total_epochs = 2; // Total expected epochs (0 if unknown)
-  float              loss         = 3; // Current loss value
-  map<string, float> metrics      = 4; // Additional metrics (e.g. "rmse", "r2")
+// Stage is the part of the run the worker is in.
+enum Stage {
+  STAGE_UNSPECIFIED = 0;
+  STAGE_LOADING_DATA = 1;
+  STAGE_PREPROCESSING = 2;
+  STAGE_TRAINING = 3;
+  STAGE_EVALUATING = 4;
+  STAGE_SAVING = 5;
 }
 
-// JobCompleted signals successful training. Contains the serialized
-// model and final evaluation metrics. Sent as the last WorkerUpdate
-// before the worker closes the stream.
-message JobCompleted {
-  bytes              model_artifact       = 1; // Serialized model bytes
-  map<string, float> metrics              = 2; // Final evaluation metrics on test set
-  int64              training_duration_ms = 3; // Wall-clock training time in milliseconds
+// Progress reports where the run is. The worker sends one whenever the stage
+// changes, and during training after every epoch (iterative models) or once
+// (single-step models).
+message Progress {
+  Stage stage = 1;
+  // Current epoch or boosting round, 1-indexed. 0 outside STAGE_TRAINING.
+  int32 epoch = 2;
+  // Total expected epochs. 0 if unknown or not applicable.
+  int32 total_epochs = 3;
+  // Training loss after this epoch. Absent when the model has no loss.
+  optional double loss = 4;
+  // Additional metrics for this epoch, e.g. "val_loss".
+  map<string, double> metrics = 5;
 }
 
-// JobFailed signals that training could not be completed. This may be
-// due to data errors, DB connectivity issues, invalid configuration,
-// cancellation, or unexpected exceptions.
-message JobFailed {
-  string error_message = 1; // Human-readable error description
-  string traceback     = 2; // Traceback for debugging
+// LogLevel is the severity of a LogLine.
+enum LogLevel {
+  LOG_LEVEL_UNSPECIFIED = 0;
+  LOG_LEVEL_DEBUG = 1;
+  LOG_LEVEL_INFO = 2;
+  LOG_LEVEL_WARNING = 3;
+  LOG_LEVEL_ERROR = 4;
+}
+
+// LogLine is one line of the worker's log, shown in the run's log view.
+message LogLine {
+  LogLevel level = 1;
+  string message = 2;
+  // When the line was written, in milliseconds since the Unix epoch.
+  int64 time_unix_ms = 3;
+  // Name of the logger that wrote it, e.g. "reggie_worker.data".
+  string logger = 4;
+}
+
+// Heartbeat tells conductor the worker is alive when it has nothing else to
+// send. It carries no data.
+message Heartbeat {}
+
+// ArtifactChunk carries part of the trained model. The worker splits the
+// serialized model into chunks of at most 1 MiB and sends them in order;
+// conductor concatenates them. RunCompleted describes the whole artifact.
+message ArtifactChunk {
+  bytes data = 1;
+}
+
+// ArtifactFormat says how the model bytes are serialized.
+enum ArtifactFormat {
+  ARTIFACT_FORMAT_UNSPECIFIED = 0;
+  // Python pickle. Loading it runs arbitrary code: only load artifacts from
+  // trusted workers.
+  ARTIFACT_FORMAT_PICKLE = 1;
+  // Keras native format (.keras).
+  ARTIFACT_FORMAT_KERAS = 2;
+}
+
+// RunCompleted is the final message of a successful run. It follows the
+// artifact's chunks.
+message RunCompleted {
+  ArtifactFormat artifact_format = 1;
+  // Library that produced the model, e.g. "scikit-learn", and its version.
+  // Needed to load a pickle or a framework-specific format later.
+  string framework = 2;
+  string framework_version = 3;
+  // Size and SHA-256 (lowercase hex) of the concatenated chunks, so conductor
+  // can check it received the whole artifact.
+  int64 artifact_size_bytes = 4;
+  string artifact_sha256 = 5;
+  // Final evaluation metrics on the held-out test set, e.g. "rmse", "r2".
+  map<string, double> metrics = 6;
+  // Wall-clock time from RunStarted to RunCompleted, in milliseconds.
+  int64 training_duration_ms = 7;
+}
+
+// RunFailed is the final message of a run that could not finish: bad data,
+// an unreachable database, invalid configuration or an unexpected error.
+message RunFailed {
+  // Human-readable description, shown to the user.
+  string error_message = 1;
+  // Traceback or other detail for debugging.
+  string traceback = 2;
+}
+
+// RunCancelled is the final message of a run stopped by CancelRun.
+message RunCancelled {
+  // The reason from CancelRun, or what the worker was doing when it stopped.
+  string reason = 1;
 }

@@ -3,8 +3,10 @@
 The gRPC contract between the Reggie ML **conductor** (Go, gRPC server) and its **workers**
 (gRPC clients, e.g. `reggie-ml/worker-py`). Everything downstream depends on this repo.
 
-- `workers.proto`: the one source file (`WorkerService` with a single bidi stream: worker sends
-  `WorkerUpdate` (started/progress/completed/failed), conductor sends `JobCommand` (cancel)).
+- `workers.proto`: the one source file. `WorkerService.RunTraining` is a single bidi stream per run:
+  the worker sends `WorkerMessage` (started, progress, log, heartbeat, artifact chunks, then
+  completed/failed/cancelled), conductor sends `ConductorMessage` (cancel). The stream lifecycle
+  is documented on the RPC; keep that comment accurate.
 - `gen/go/`: generated Go code, its own Go module `github.com/reggie-ml/proto/gen/go`
   (package name `_go`, so consumers alias the import: `pb "github.com/reggie-ml/proto/gen/go"`).
 - `gen/python/`: generated Python package `reggie-proto` (`reggie_proto.workers_pb2`, `_grpc`, `.pyi`).

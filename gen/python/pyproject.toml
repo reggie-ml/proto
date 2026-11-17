@@ -1,6 +1,6 @@
 [project]
 name = "reggie-proto"
-version = "0.2.0"
+version = "0.3.0"
 description = "Generated Python gRPC/protobuf stubs for the Reggie ML workers."
 requires-python = ">=3.12"
 dependencies = [

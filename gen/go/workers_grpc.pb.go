@@ -26,15 +26,30 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// WorkerService defines the communication contract between the API
-// (server) and worker processes (clients).
+// WorkerService is the contract between conductor (the gRPC server) and a
+// training worker (the client). A worker trains exactly one run and opens
+// exactly one RunTraining stream for it.
 type WorkerServiceClient interface {
-	// RunTraining establishes a bidirectional stream for a single training job.
-	// The worker (client) streams WorkerUpdate messages to report lifecycle
-	// events and progress. The server streams JobCommand messages to control
-	// the worker (e.g. cancellation). The stream remains open for the
-	// duration of the training job.
-	RunTraining(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[WorkerUpdate, JobCommand], error)
+	// RunTraining carries one training run from start to finish.
+	//
+	// Worker → conductor, in this order:
+	//  1. RunStarted, as the first message.
+	//  2. Any number of Progress, LogLine and Heartbeat messages. While the
+	//     stream is open the worker sends some message at least every 10
+	//     seconds, sending a Heartbeat when it has nothing else to say.
+	//     Conductor treats 30 seconds of silence as a lost worker and fails
+	//     the run.
+	//  3. On success: the trained model as one or more ArtifactChunk
+	//     messages, then RunCompleted.
+	//  4. Exactly one final message: RunCompleted, RunFailed or RunCancelled.
+	//     The worker then closes its side of the stream.
+	//
+	// Conductor → worker: CancelRun, at any time. The worker stops at the next
+	// safe point and ends with RunCancelled.
+	//
+	// Every WorkerMessage carries the run_id. A stream that ends without a final
+	// message is treated as a failed run.
+	RunTraining(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[WorkerMessage, ConductorMessage], error)
 }
 
 type workerServiceClient struct {
@@ -45,32 +60,47 @@ func NewWorkerServiceClient(cc grpc.ClientConnInterface) WorkerServiceClient {
 	return &workerServiceClient{cc}
 }
 
-func (c *workerServiceClient) RunTraining(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[WorkerUpdate, JobCommand], error) {
+func (c *workerServiceClient) RunTraining(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[WorkerMessage, ConductorMessage], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &WorkerService_ServiceDesc.Streams[0], WorkerService_RunTraining_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[WorkerUpdate, JobCommand]{ClientStream: stream}
+	x := &grpc.GenericClientStream[WorkerMessage, ConductorMessage]{ClientStream: stream}
 	return x, nil
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type WorkerService_RunTrainingClient = grpc.BidiStreamingClient[WorkerUpdate, JobCommand]
+type WorkerService_RunTrainingClient = grpc.BidiStreamingClient[WorkerMessage, ConductorMessage]
 
 // WorkerServiceServer is the server API for WorkerService service.
 // All implementations must embed UnimplementedWorkerServiceServer
 // for forward compatibility.
 //
-// WorkerService defines the communication contract between the API
-// (server) and worker processes (clients).
+// WorkerService is the contract between conductor (the gRPC server) and a
+// training worker (the client). A worker trains exactly one run and opens
+// exactly one RunTraining stream for it.
 type WorkerServiceServer interface {
-	// RunTraining establishes a bidirectional stream for a single training job.
-	// The worker (client) streams WorkerUpdate messages to report lifecycle
-	// events and progress. The server streams JobCommand messages to control
-	// the worker (e.g. cancellation). The stream remains open for the
-	// duration of the training job.
-	RunTraining(grpc.BidiStreamingServer[WorkerUpdate, JobCommand]) error
+	// RunTraining carries one training run from start to finish.
+	//
+	// Worker → conductor, in this order:
+	//  1. RunStarted, as the first message.
+	//  2. Any number of Progress, LogLine and Heartbeat messages. While the
+	//     stream is open the worker sends some message at least every 10
+	//     seconds, sending a Heartbeat when it has nothing else to say.
+	//     Conductor treats 30 seconds of silence as a lost worker and fails
+	//     the run.
+	//  3. On success: the trained model as one or more ArtifactChunk
+	//     messages, then RunCompleted.
+	//  4. Exactly one final message: RunCompleted, RunFailed or RunCancelled.
+	//     The worker then closes its side of the stream.
+	//
+	// Conductor → worker: CancelRun, at any time. The worker stops at the next
+	// safe point and ends with RunCancelled.
+	//
+	// Every WorkerMessage carries the run_id. A stream that ends without a final
+	// message is treated as a failed run.
+	RunTraining(grpc.BidiStreamingServer[WorkerMessage, ConductorMessage]) error
 	mustEmbedUnimplementedWorkerServiceServer()
 }
 
@@ -81,7 +111,7 @@ type WorkerServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedWorkerServiceServer struct{}
 
-func (UnimplementedWorkerServiceServer) RunTraining(grpc.BidiStreamingServer[WorkerUpdate, JobCommand]) error {
+func (UnimplementedWorkerServiceServer) RunTraining(grpc.BidiStreamingServer[WorkerMessage, ConductorMessage]) error {
 	return status.Error(codes.Unimplemented, "method RunTraining not implemented")
 }
 func (UnimplementedWorkerServiceServer) mustEmbedUnimplementedWorkerServiceServer() {}
@@ -106,11 +136,11 @@ func RegisterWorkerServiceServer(s grpc.ServiceRegistrar, srv WorkerServiceServe
 }
 
 func _WorkerService_RunTraining_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(WorkerServiceServer).RunTraining(&grpc.GenericServerStream[WorkerUpdate, JobCommand]{ServerStream: stream})
+	return srv.(WorkerServiceServer).RunTraining(&grpc.GenericServerStream[WorkerMessage, ConductorMessage]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type WorkerService_RunTrainingServer = grpc.BidiStreamingServer[WorkerUpdate, JobCommand]
+type WorkerService_RunTrainingServer = grpc.BidiStreamingServer[WorkerMessage, ConductorMessage]
 
 // WorkerService_ServiceDesc is the grpc.ServiceDesc for WorkerService service.
 // It's only intended for direct use with grpc.RegisterService,
