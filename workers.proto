@@ -130,6 +130,9 @@ enum ArtifactFormat {
   ARTIFACT_FORMAT_PICKLE = 1;
   // Keras native format (.keras).
   ARTIFACT_FORMAT_KERAS = 2;
+  // ONNX model (.onnx): the run's preprocessing and the trained model as one
+  // graph. It takes one input per feature column, named as in the source table.
+  ARTIFACT_FORMAT_ONNX = 3;
 }
 
 // RunCompleted is the final message of a successful run. It follows the

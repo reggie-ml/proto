@@ -146,6 +146,9 @@ const (
 	ArtifactFormat_ARTIFACT_FORMAT_PICKLE ArtifactFormat = 1
 	// Keras native format (.keras).
 	ArtifactFormat_ARTIFACT_FORMAT_KERAS ArtifactFormat = 2
+	// ONNX model (.onnx): the run's preprocessing and the trained model as one
+	// graph. It takes one input per feature column, named as in the source table.
+	ArtifactFormat_ARTIFACT_FORMAT_ONNX ArtifactFormat = 3
 )
 
 // Enum value maps for ArtifactFormat.
@@ -154,11 +157,13 @@ var (
 		0: "ARTIFACT_FORMAT_UNSPECIFIED",
 		1: "ARTIFACT_FORMAT_PICKLE",
 		2: "ARTIFACT_FORMAT_KERAS",
+		3: "ARTIFACT_FORMAT_ONNX",
 	}
 	ArtifactFormat_value = map[string]int32{
 		"ARTIFACT_FORMAT_UNSPECIFIED": 0,
 		"ARTIFACT_FORMAT_PICKLE":      1,
 		"ARTIFACT_FORMAT_KERAS":       2,
+		"ARTIFACT_FORMAT_ONNX":        3,
 	}
 )
 
@@ -1057,11 +1062,12 @@ const file_workers_proto_rawDesc = "" +
 	"\x0fLOG_LEVEL_DEBUG\x10\x01\x12\x12\n" +
 	"\x0eLOG_LEVEL_INFO\x10\x02\x12\x15\n" +
 	"\x11LOG_LEVEL_WARNING\x10\x03\x12\x13\n" +
-	"\x0fLOG_LEVEL_ERROR\x10\x04*h\n" +
+	"\x0fLOG_LEVEL_ERROR\x10\x04*\x82\x01\n" +
 	"\x0eArtifactFormat\x12\x1f\n" +
 	"\x1bARTIFACT_FORMAT_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16ARTIFACT_FORMAT_PICKLE\x10\x01\x12\x19\n" +
-	"\x15ARTIFACT_FORMAT_KERAS\x10\x022U\n" +
+	"\x15ARTIFACT_FORMAT_KERAS\x10\x02\x12\x18\n" +
+	"\x14ARTIFACT_FORMAT_ONNX\x10\x032U\n" +
 	"\rWorkerService\x12D\n" +
 	"\vRunTraining\x12\x16.workers.WorkerMessage\x1a\x19.workers.ConductorMessage(\x010\x01B#Z!github.com/reggie-ml/proto/gen/gob\x06proto3"
 

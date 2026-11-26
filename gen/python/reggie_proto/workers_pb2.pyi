@@ -29,6 +29,7 @@ class ArtifactFormat(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     ARTIFACT_FORMAT_UNSPECIFIED: _ClassVar[ArtifactFormat]
     ARTIFACT_FORMAT_PICKLE: _ClassVar[ArtifactFormat]
     ARTIFACT_FORMAT_KERAS: _ClassVar[ArtifactFormat]
+    ARTIFACT_FORMAT_ONNX: _ClassVar[ArtifactFormat]
 STAGE_UNSPECIFIED: Stage
 STAGE_LOADING_DATA: Stage
 STAGE_PREPROCESSING: Stage
@@ -43,6 +44,7 @@ LOG_LEVEL_ERROR: LogLevel
 ARTIFACT_FORMAT_UNSPECIFIED: ArtifactFormat
 ARTIFACT_FORMAT_PICKLE: ArtifactFormat
 ARTIFACT_FORMAT_KERAS: ArtifactFormat
+ARTIFACT_FORMAT_ONNX: ArtifactFormat
 
 class WorkerMessage(_message.Message):
     __slots__ = ("run_id", "started", "progress", "log", "heartbeat", "artifact_chunk", "completed", "failed", "cancelled")
